@@ -1,0 +1,57 @@
+#!/bin/bash
+# Script used to handle the updating of remote repos
+# that I have forked. All branches and tags are updated
+# on the remote repo from the upstream (or original repo).
+getopts "v" opt
+
+case "$opt" in
+    # -v is for verbose (applies mostly to git here), but in 
+    # this case it also prints commands and their arguments as they execute
+    "v")    set -ex
+            GIT_CLONE=( git clone --verbose )
+            GIT_BRANCH=( git branch --verbose )
+            GIT_PUSH=( git push --verbose )
+            ;;
+    *)      set -e
+            GIT_CLONE=( git clone --quiet )
+            GIT_BRANCH=( git branch --quiet )
+            GIT_PUSH=( git push --quiet )
+            ;;
+esac
+
+# NOTE: is it assumed that the system running the script
+# is configured to be able to push to the remote forked repo(s)
+WEBHOSTED_GIT_ACCOUNT_URL="https://github.com/reap2sow1/"
+PROGRAM_NAME="$(basename "$0")"
+TEMP_DIR_NAME="$PROGRAM_NAME-temp"
+declare -A FORKED_REPO_NAMES_TO_UPSTREAM_URLS=(
+    # ["forked_repo_name"]=>"upstream_url"
+    ["packer"]="https://github.com/hashicorp/packer"
+)
+
+if [ -z "$(which git)" ]; then
+    echo "${PROGRAM_NAME}: git cannot be found on the PATH!"
+    exit 1
+fi
+
+mkdir "$TEMP_DIR_NAME" || exit 1
+cd "$TEMP_DIR_NAME" || exit 1
+
+for forked_repo in "${!FORKED_REPO_NAMES_TO_UPSTREAM_URLS[@]}"; do
+    forked_repo_url="${WEBHOSTED_GIT_ACCOUNT_URL}${forked_repo}"
+    "${GIT_CLONE[@]}" "$forked_repo_url" "$forked_repo" > /dev/null
+    cd "$forked_repo"
+    # seqeuence of commands inspired from:
+    # https://stackoverflow.com/questions/379081/track-all-remote-git-branches-as-local-branches/6300386#answer-27234826
+    git remote add upstream "${FORKED_REPO_NAMES_TO_UPSTREAM_URLS[$forked_repo]}"
+    for short_refname in $(git branch -r | grep -vE "HEAD|master"); do 
+        "${GIT_BRANCH[@]}" --track "${short_refname#*/}" "$short_refname"; done
+    "${GIT_PUSH[@]}" --all "$forked_repo_url"
+    "${GIT_PUSH[@]}" --tags "$forked_repo_url"
+    cd ..
+done
+
+cd ..
+rm --recursive --force "$TEMP_DIR_NAME"
+
+exit 0
