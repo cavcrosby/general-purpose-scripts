@@ -26,12 +26,15 @@ PROGRAM_NAME="$(basename "$0")"
 TEMP_DIR_NAME="$PROGRAM_NAME-temp"
 declare -A FORKED_REPO_NAMES_TO_UPSTREAM_URLS=(
     # ["forked_repo_name"]=>"upstream_url"
-    ["packer"]="https://github.com/hashicorp/packer"
 )
 
 if [ -z "$(which git)" ]; then
     echo "${PROGRAM_NAME}: git cannot be found on the PATH!"
     exit 1
+fi
+
+if [ -d "$TEMP_DIR_NAME" ]; then
+    rm --recursive --force "$TEMP_DIR_NAME"
 fi
 
 mkdir "$TEMP_DIR_NAME" || exit 1
