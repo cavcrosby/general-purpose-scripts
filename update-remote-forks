@@ -21,7 +21,7 @@ esac
 
 # NOTE: is it assumed that the system running the script
 # is configured to be able to push to the remote forked repo(s)
-WEBHOSTED_GIT_ACCOUNT_URL="https://github.com/reap2sow1/"
+WEBHOSTED_GIT_ACCOUNT_URL=
 PROGRAM_NAME="$(basename "$0")"
 TEMP_DIR_NAME="$PROGRAM_NAME-temp"
 declare -A FORKED_REPO_NAMES_TO_UPSTREAM_URLS=(
