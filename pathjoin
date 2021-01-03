@@ -1,0 +1,35 @@
+#!/bin/bash
+
+#######################################
+# Used to join together 'file' entries into
+# a path on the file system.
+# Outputs:
+#   - Conjoined file entries to stdout
+#######################################
+pathjoin () {
+    # NOTE: getting the PROGRAM_NAME currently is bash specfic
+    PROGRAM_NAME="${FUNCNAME[0]}"
+    if [ $# -eq 0 ]; then
+        echo "${PROGRAM_NAME}: at least one argument is expected"
+        return 1
+    fi
+
+    completed_path=""
+    while [ $# -gt 0 ]; do
+        arg="$1"
+        # ${string:position:length}
+        # looking to see if directory separator is added in front of arg
+        if [ "${arg:0:1}" != "/" ]; then
+            arg="/${arg}"
+        fi
+        # looking to see if directory separator is added at the end of arg
+        if [ "${arg:((${#arg}-1)):1}" = "/" ]; then
+            arg=${arg:0:((${#arg}-1))}
+        fi
+        completed_path="${completed_path}${arg}"
+        shift
+    done
+
+    echo "$completed_path"
+    return 0
+}
