@@ -3,6 +3,8 @@
 #######################################
 # Used to join together 'file' entries into
 # a path on the file system.
+# Arguments:
+#   $n: a file/string to concatenate with (n+1)
 # Outputs:
 #   - Conjoined file entries to stdout
 #######################################
