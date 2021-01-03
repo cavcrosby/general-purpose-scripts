@@ -19,6 +19,9 @@ case "$opt" in
             ;;
 esac
 
+# shellcheck disable=SC1091
+source pathjoin
+
 # NOTE: is it assumed that the system running the script
 # is configured to be able to push to the remote forked repo(s)
 WEBHOSTED_GIT_ACCOUNT_URL=
@@ -41,16 +44,23 @@ mkdir "$TEMP_DIR_NAME" || exit 1
 cd "$TEMP_DIR_NAME" || exit 1
 
 for forked_repo in "${!FORKED_REPO_NAMES_TO_UPSTREAM_URLS[@]}"; do
-    forked_repo_url="${WEBHOSTED_GIT_ACCOUNT_URL}${forked_repo}"
-    "${GIT_CLONE[@]}" "$forked_repo_url" "$forked_repo" > /dev/null
+    # e.g. webhost_url https://github.com
+    webhost_url="$(grep -Po '\w+://[ \w\.]+' <<< "${WEBHOSTED_GIT_ACCOUNT_URL}")"
+    # e.g. webhost_user_dir /reap2sow1
+    webhost_user_dir="$(grep -Po '\w\K/\w+[^?]+' <<< "${WEBHOSTED_GIT_ACCOUNT_URL}")"
+    # e.g. forked_repo_dir /reap2sow1/somerepo
+    forked_repo_dir="$(pathjoin "${webhost_user_dir}" "${forked_repo}")"
+    # e.g. https://github.com/reap2sow1/somerepo
+    final_webhost_url="${webhost_url}${forked_repo_dir}"
+    "${GIT_CLONE[@]}" "$final_webhost_url" "$forked_repo" > /dev/null
     cd "$forked_repo"
     # seqeuence of commands inspired from:
     # https://stackoverflow.com/questions/379081/track-all-remote-git-branches-as-local-branches/6300386#answer-27234826
     git remote add upstream "${FORKED_REPO_NAMES_TO_UPSTREAM_URLS[$forked_repo]}"
     for short_refname in $(git branch -r | grep -vE "HEAD|master"); do 
         "${GIT_BRANCH[@]}" --track "${short_refname#*/}" "$short_refname"; done
-    "${GIT_PUSH[@]}" --all "$forked_repo_url"
-    "${GIT_PUSH[@]}" --tags "$forked_repo_url"
+    "${GIT_PUSH[@]}" --all "$final_webhost_url"
+    "${GIT_PUSH[@]}" --tags "$final_webhost_url"
     cd ..
 done
 
