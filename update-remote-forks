@@ -45,9 +45,9 @@ cd "$TEMP_DIR_NAME" || exit 1
 
 for forked_repo in "${!FORKED_REPO_NAMES_TO_UPSTREAM_URLS[@]}"; do
     # e.g. webhost_url https://github.com
-    webhost_url="$(grep -Po '\w+://[ \w\.]+' <<< "${WEBHOSTED_GIT_ACCOUNT_URL}")"
+    webhost_url="$(grep --perl-regexp --only-matching '\w+://[ \w\.]+' <<< "${WEBHOSTED_GIT_ACCOUNT_URL}")"
     # e.g. webhost_user_dir /reap2sow1
-    webhost_user_dir="$(grep -Po '\w\K/\w+[^?]+' <<< "${WEBHOSTED_GIT_ACCOUNT_URL}")"
+    webhost_user_dir="$(grep --perl-regexp --only-matching '\w\K/\w+[^?]+' <<< "${WEBHOSTED_GIT_ACCOUNT_URL}")"
     # e.g. forked_repo_dir /reap2sow1/somerepo
     forked_repo_dir="$(pathjoin "${webhost_user_dir}" "${forked_repo}")"
     # e.g. https://github.com/reap2sow1/somerepo
