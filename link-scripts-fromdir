@@ -1,0 +1,16 @@
+#!/bin/bash
+
+PROGRAM_NAME="$(basename "$0")"
+LINK_FROM=""
+for f in ./*
+do
+    # removing the $PWD notation './' from the file name
+    f="${f:2:${#f}}"
+    case "${f:2:${#f}}" in
+    "${PROGRAM_NAME}")      ;;
+    "README.md")            ;;
+    "LICENSE")              ;;
+    *)                      ln -sf "${PWD}/${f}" "${HOME}/.local/bin/$f"
+                            ;;
+    esac
+done
