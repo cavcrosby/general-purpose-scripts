@@ -37,3 +37,5 @@ pathjoin () {
     echo "$completed_path"
     return 0
 }
+
+pathjoin "$@"
