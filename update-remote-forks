@@ -19,9 +19,6 @@ case "$opt" in
             ;;
 esac
 
-# shellcheck disable=SC1091
-source pathjoin
-
 # NOTE: is it assumed that the system running the script
 # is configured to be able to push to the remote forked repo(s)
 WEBHOSTED_GIT_ACCOUNT_URL=
