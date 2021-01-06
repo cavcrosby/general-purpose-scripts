@@ -1,7 +1,5 @@
 #!/usr/bin/env python3
 # Standard Library Imports
-import os
-import datetime
 import subprocess
 
 # Third Party Imports
