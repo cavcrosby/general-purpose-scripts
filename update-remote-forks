@@ -10,20 +10,22 @@ case "$opt" in
     "v")    set -ex
             GIT_CLONE=( git clone --verbose )
             GIT_BRANCH=( git branch --verbose )
-            GIT_PUSH=( git push --verbose )
+            GIT_PUSH=( git push --verbose --force )
             ;;
     *)      set -e
             GIT_CLONE=( git clone --quiet )
             GIT_BRANCH=( git branch --quiet )
-            GIT_PUSH=( git push --quiet )
+            GIT_PUSH=( git push --quiet --force )
             ;;
 esac
 
 # NOTE: is it assumed that the system running the script
 # is configured to be able to push to the remote forked repo(s)
-WEBHOSTED_GIT_ACCOUNT_URL=
 PROGRAM_NAME="$(basename "$0")"
+PYTHON_EXECUTABLE="$(which python3)"
 TEMP_DIR_NAME="$PROGRAM_NAME-temp"
+FORKED_GIT_REMOTE_NAME="custom_fork"
+WEBHOSTED_GIT_ACCOUNT_URL="https://github.com/reap2sow1/"
 declare -A FORKED_REPO_NAMES_TO_UPSTREAM_URLS=(
     # ["forked_repo_name"]=>"upstream_url"
 )
@@ -31,6 +33,11 @@ declare -A FORKED_REPO_NAMES_TO_UPSTREAM_URLS=(
 if [ -z "$(which git)" ]; then
     echo "${PROGRAM_NAME}: git cannot be found on the PATH!"
     exit 1
+fi
+
+if [ -z "$PYTHON_EXECUTABLE" ] || [ "$($PYTHON_EXECUTABLE --version | grep -e "Python 3\..*" -c)" -eq 0 ]; then
+        echo "${PROGRAM_NAME}: 'python3' does not point to a python 3 interpreter"
+        exit 1
 fi
 
 if [ -d "$TEMP_DIR_NAME" ]; then
@@ -41,23 +48,21 @@ mkdir "$TEMP_DIR_NAME" || exit 1
 cd "$TEMP_DIR_NAME" || exit 1
 
 for forked_repo in "${!FORKED_REPO_NAMES_TO_UPSTREAM_URLS[@]}"; do
-    # e.g. webhost_url https://github.com
-    webhost_url="$(grep --perl-regexp --only-matching '\w+://[ \w\.]+' <<< "${WEBHOSTED_GIT_ACCOUNT_URL}")"
-    # e.g. webhost_user_dir /reap2sow1
-    webhost_user_dir="$(grep --perl-regexp --only-matching '\w\K/\w+[^?]+' <<< "${WEBHOSTED_GIT_ACCOUNT_URL}")"
-    # e.g. forked_repo_dir /reap2sow1/somerepo
-    forked_repo_dir="$(pathjoin "${webhost_user_dir}" "${forked_repo}")"
-    # e.g. https://github.com/reap2sow1/somerepo
-    final_webhost_url="${webhost_url}${forked_repo_dir}"
-    "${GIT_CLONE[@]}" "$final_webhost_url" "$forked_repo" > /dev/null
-    cd "$forked_repo"
+    upstream="${FORKED_REPO_NAMES_TO_UPSTREAM_URLS["$forked_repo"]}"
+    # NOTE: "$upstream" should follow parameter expansion, then being 
+    # seen to python as os.path.basename("{results from parameter expansion}")
+    upstream_repo_name="$($PYTHON_EXECUTABLE -c 'import os; print(os.path.basename('\""$upstream"\"'))')"
+    "${GIT_CLONE[@]}" "$upstream" "$upstream_repo_name" > /dev/null
+    cd "$upstream_repo_name"
     # seqeuence of commands inspired from:
+    # https://stackoverflow.com/questions/15779740/how-to-update-my-fork-to-have-the-same-branches-and-tags-as-the-original-reposit
     # https://stackoverflow.com/questions/379081/track-all-remote-git-branches-as-local-branches/6300386#answer-27234826
-    git remote add upstream "${FORKED_REPO_NAMES_TO_UPSTREAM_URLS[$forked_repo]}"
+    git remote add "$FORKED_GIT_REMOTE_NAME" "$($PYTHON_EXECUTABLE -c 'import os; print(os.path.join('\""$WEBHOSTED_GIT_ACCOUNT_URL"\"', '\""$forked_repo"\"'))')"
     for short_refname in $(git branch -r | grep -vE "HEAD|master"); do 
-        "${GIT_BRANCH[@]}" --track "${short_refname#*/}" "$short_refname"; done
-    "${GIT_PUSH[@]}" --all "$final_webhost_url"
-    "${GIT_PUSH[@]}" --tags "$final_webhost_url"
+        "${GIT_BRANCH[@]}" --track "${short_refname#*/}" "$short_refname"; 
+    done
+    "${GIT_PUSH[@]}" --all "$FORKED_GIT_REMOTE_NAME"
+    "${GIT_PUSH[@]}" --tags "$FORKED_GIT_REMOTE_NAME"
     cd ..
 done
 
