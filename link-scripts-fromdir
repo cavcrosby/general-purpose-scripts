@@ -1,7 +1,7 @@
 #!/bin/bash
 
 PROGRAM_NAME="$(basename "$0")"
-LINK_FROM=""
+LINK_DIR=""
 for f in ./*
 do
     # removing the $PWD notation './' from the file name
@@ -10,7 +10,7 @@ do
     "${PROGRAM_NAME}")      ;;
     "README.md")            ;;
     "LICENSE")              ;;
-    *)                      ln -sf "${PWD}/${f}" "${HOME}/.local/bin/$f"
+    *)                      ln -sf "${PWD}/${f}" "${LINK_DIR}/$f"
                             ;;
     esac
 done
