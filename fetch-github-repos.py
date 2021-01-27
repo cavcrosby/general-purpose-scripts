@@ -41,14 +41,15 @@ class GitHubAuth(requests.auth.AuthBase):
         """
         return f"token {self.API_TOKEN}"
 
+
 API_TOKEN = ""
-PAYLOAD = {"type" : "all"}
+PAYLOAD = {"type": "all"}
 GITHUB_API_URL = "https://api.github.com/user/repos"
 
 auth = GitHubAuth(API_TOKEN)
 
 repos = requests.get(GITHUB_API_URL, auth=auth, params=PAYLOAD)
-repo_names_to_urls = {repo['name']:repo['svn_url'] for repo in repos.json()}
+repo_names_to_urls = {repo["name"]: repo["svn_url"] for repo in repos.json()}
 
 for repo_name in repo_names_to_urls:
     subprocess.run(["git", "clone", repo_names_to_urls[repo_name], repo_name])
