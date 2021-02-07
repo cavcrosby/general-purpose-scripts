@@ -10,7 +10,7 @@ do
     "${PROGRAM_NAME}")      ;;
     "README.md")            ;;
     "LICENSE")              ;;
-    *)                      ln -sf "${PWD}/${f}" "${LINK_DIR}/$f"
+    *)                      ln --symbolic --force "${PWD}/${f}" "${LINK_DIR}/$f"
                             ;;
     esac
 done

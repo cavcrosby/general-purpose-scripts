@@ -16,7 +16,7 @@ pathjoin () {
         return 1
     fi
 
-    # TODO URLS can be accounted for and handled before parsing file system path
+    # TODO(conner@conneracrosby.tech): URLS can be accounted for and handled before parsing file system path
 
     completed_path=""
     while [ $# -gt 0 ]; do

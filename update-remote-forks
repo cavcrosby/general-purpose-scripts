@@ -35,7 +35,7 @@ if [ -z "$(which git)" ]; then
     exit 1
 fi
 
-if [ -z "$PYTHON_EXECUTABLE" ] || [ "$($PYTHON_EXECUTABLE --version | grep -e "Python 3\..*" -c)" -eq 0 ]; then
+if [ -z "$PYTHON_EXECUTABLE" ] || [ "$($PYTHON_EXECUTABLE --version | grep --regexp "Python 3\..*" --count)" -eq 0 ]; then
         echo "${PROGRAM_NAME}: 'python3' does not point to a python 3 interpreter"
         exit 1
 fi
@@ -58,7 +58,7 @@ for forked_repo in "${!FORKED_REPO_NAMES_TO_UPSTREAM_URLS[@]}"; do
     # https://stackoverflow.com/questions/15779740/how-to-update-my-fork-to-have-the-same-branches-and-tags-as-the-original-reposit
     # https://stackoverflow.com/questions/379081/track-all-remote-git-branches-as-local-branches/6300386#answer-27234826
     git remote add "$FORKED_GIT_REMOTE_NAME" "$($PYTHON_EXECUTABLE -c 'import os; print(os.path.join('\""$WEBHOSTED_GIT_ACCOUNT_URL"\"', '\""$forked_repo"\"'))')"
-    for short_refname in $(git branch -r | grep -vE "HEAD|master"); do 
+    for short_refname in $(git branch --remotes | grep --invert-match --extended-regexp "HEAD|master"); do 
         "${GIT_BRANCH[@]}" --track "${short_refname#*/}" "$short_refname"; 
     done
     "${GIT_PUSH[@]}" --all "$FORKED_GIT_REMOTE_NAME"
