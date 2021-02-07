@@ -1,6 +1,11 @@
 #!/bin/bash
 
 PROGRAM_NAME="$(basename "$0")"
+# for reference, usage str for ln
+# Usage: ln [OPTION]... TARGET LINK_NAME
+#
+# NOTE: LINK_DIR is the location of symlink
+# that points to f/file in this git repo
 LINK_DIR=""
 for f in ./*
 do
