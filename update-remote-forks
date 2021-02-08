@@ -69,7 +69,7 @@ for forked_repo_name in "${!FORKED_REPO_NAMES_TO_UPSTREAM_URLS[@]}"; do
     done
     "${GIT_PUSH[@]}" --all "$FORKED_GIT_REMOTE_NAME"
     "${GIT_PUSH[@]}" --tags "$FORKED_GIT_REMOTE_NAME"
-    "$PYTHON_EXECUTABLE" "${DISABLE_GITHUB_ACTIONS_SCRIPTNAME}" "$forked_repo_name"
+    "$PYTHON_EXECUTABLE" "$(which "${DISABLE_GITHUB_ACTIONS_SCRIPTNAME}")" "$forked_repo_name"
     cd ..
 done
 
