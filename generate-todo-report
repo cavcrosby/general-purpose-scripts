@@ -1,0 +1,41 @@
+#!/bin/bash
+PROGRAM_NAME="$(basename "$0")"
+PATTERN=""
+OUTPUT_FILENAME="todos.txt"
+
+if [ -f "$OUTPUT_FILENAME" ]; then
+    rm "$OUTPUT_FILENAME"
+fi
+
+# TODO(conner@conneracrosby.tech): check other scripts that use read this way, may not need to read from stdout (fd 1)
+if [ -z "$GIT_REPOS_PATH" ]; then
+	read -r -e -p "What directory are git repositories stored in? ==> " -i "$HOME" GIT_REPOS_PATH
+fi
+
+ROOT_DIR="$GIT_REPOS_PATH"
+
+walkdirtree () {
+    DIR="$1"
+    # shellcheck disable=2181,2063
+    # NOTE: I've seen bizarre occurances where
+    # filenames have a '*' character appended to them
+    # 
+    # is the directory not empty?
+    if [ "$(find "$DIR" | wc --lines)" -gt 1 ]; then
+        for f in "$DIR"/*; do
+            if [ -d "$f" ]; then
+                walkdirtree "$f"
+            elif grep --quiet \* <<< "$f"; then
+                continue
+            else 
+                echo "$f"
+            fi
+        done
+    fi
+}
+
+for f in $(walkdirtree "$ROOT_DIR"); do
+    grep --initial-tab --regexp "$PATTERN" --with-filename "$f" >> "$OUTPUT_FILENAME"
+done
+
+exit 0
