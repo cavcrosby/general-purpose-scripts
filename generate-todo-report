@@ -1,7 +1,6 @@
 #!/bin/bash
 PROGRAM_NAME="$(basename "$0")"
-PATTERN=""
-OUTPUT_FILENAME="todos.txt"
+PATTERN=
 
 if [ -f "$OUTPUT_FILENAME" ]; then
     rm "$OUTPUT_FILENAME"
@@ -35,7 +34,7 @@ walkdirtree () {
 }
 
 for f in $(walkdirtree "$ROOT_DIR"); do
-    grep --initial-tab --regexp "$PATTERN" --with-filename "$f" >> "$OUTPUT_FILENAME"
+    grep --initial-tab --regexp "$PATTERN" --with-filename "$f"
 done
 
 exit 0
