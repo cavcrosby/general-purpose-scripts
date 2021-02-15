@@ -1,14 +1,13 @@
 #!/bin/bash
+#
+# Small script that prints all the files with TODO 'PATTERNS',
+# along with the TODO message.
+
 PROGRAM_NAME="$(basename "$0")"
 PATTERN=
 
-if [ -f "$OUTPUT_FILENAME" ]; then
-    rm "$OUTPUT_FILENAME"
-fi
-
-# TODO(conner@conneracrosby.tech): check other scripts that use read this way, may not need to read from stdout (fd 1)
 if [ -z "$GIT_REPOS_PATH" ]; then
-	read -r -e -p "What directory are git repositories stored in? ==> " -i "$HOME" GIT_REPOS_PATH
+	read -r -p "What directory are git repositories stored in? ==> " -i "$HOME" GIT_REPOS_PATH
 fi
 
 ROOT_DIR="$GIT_REPOS_PATH"

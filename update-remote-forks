@@ -1,7 +1,9 @@
 #!/bin/bash
+#
 # Script used to handle the updating of remote repos
 # that I have forked. All branches and tags are updated
 # on the remote repo from the upstream (or original repo).
+
 getopts "v" opt
 
 case "$opt" in
@@ -26,7 +28,7 @@ PYTHON_EXECUTABLE="$(which python3)"
 TEMP_DIR_NAME="$PROGRAM_NAME-temp"
 DISABLE_GITHUB_ACTIONS_SCRIPTNAME="disable-github-actions.py"
 FORKED_GIT_REMOTE_NAME="custom-fork"
-WEBHOSTED_GIT_ACCOUNT_URL="https://github.com/reap2sow1/"
+WEBHOSTED_GIT_ACCOUNT_URL=""
 declare -A FORKED_REPO_NAMES_TO_UPSTREAM_URLS=(
     # ["forked_repo_name"]=>"upstream_url"
 )

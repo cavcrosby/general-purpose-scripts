@@ -2,6 +2,7 @@
 #
 # Script used to do a filtered backup of a jenkins's home directory, 
 # into some user's home directory.
+
 getopts "v" opt
 
 case "$opt" in
@@ -58,3 +59,5 @@ else
     "${TAR[@]}" --gzip --create --file "$JENKINS_HOME_BACKUP_TAR_GZ_NAME" "$JENKINS_HOME_BACKUP_DIR_NAME" > /dev/null 2>&1
 fi
 chown "$USER_ID":"$USER_GROUP_ID" "$JENKINS_HOME_BACKUP_TAR_GZ_NAME"
+
+exit 0

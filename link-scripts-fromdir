@@ -1,4 +1,7 @@
 #!/bin/bash
+#
+# Generates symbolic links that point to the 
+# scripts in this git repo.
 
 PROGRAM_NAME="$(basename "$0")"
 # for reference, usage str for ln
@@ -19,3 +22,5 @@ do
                             ;;
     esac
 done
+
+exit 0

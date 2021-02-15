@@ -1,4 +1,7 @@
 #!/bin/bash
+#
+# My attempt in creating something similar to Python's
+# os.path.join (and any other language's variation of this).
 
 #######################################
 # Used to join together 'file' entries into
@@ -11,7 +14,7 @@
 pathjoin () {
     # NOTE: getting the PROGRAM_NAME currently is bash specfic
     PROGRAM_NAME="${FUNCNAME[0]}"
-    if [ $# -eq 0 ]; then
+    if [ "$#" -eq 0 ]; then
         echo "${PROGRAM_NAME}: at least one argument is expected"
         return 1
     fi
@@ -19,7 +22,7 @@ pathjoin () {
     # TODO(conner@conneracrosby.tech): URLS can be accounted for and handled before parsing file system path
 
     completed_path=""
-    while [ $# -gt 0 ]; do
+    while [ "$#" -gt 0 ]; do
         arg="$1"
         # ${string:position:length}
         # looking to see if directory separator is added in front of arg
@@ -39,3 +42,5 @@ pathjoin () {
 }
 
 pathjoin "$@"
+
+exit
