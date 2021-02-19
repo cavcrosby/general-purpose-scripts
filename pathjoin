@@ -24,8 +24,9 @@ pathjoin () {
         arg="$1"
         # ${string:position:length}
         if [ "${#completed_path}" -eq 0 ]; then : # don't do anything (the null-operator :)
-        # looking to see if directory separator is added in front of arg
-        elif [ "${arg:0:1}" != "/" ]; then
+        # looking to see if directory separator is added in front of arg or
+        # is the last char from the completed_path
+        elif [ "${completed_path:((${#completed_path}-1)):1}" != '/' ] && [ "${arg:0:1}" != '/' ]; then
             arg="/${arg}"
         fi
         completed_path="${completed_path}${arg}"
