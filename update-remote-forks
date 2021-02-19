@@ -57,15 +57,13 @@ cd "$TEMP_DIR_NAME" || exit 1
 
 for forked_repo_name in "${!FORKED_REPO_NAMES_TO_UPSTREAM_URLS[@]}"; do
     upstream="${FORKED_REPO_NAMES_TO_UPSTREAM_URLS["$forked_repo_name"]}"
-    # NOTE: "$upstream" should follow parameter expansion, then being 
-    # seen to python as os.path.basename("{results from parameter expansion}")
-    upstream_repo_name="$($PYTHON_EXECUTABLE -c 'import os; print(os.path.basename('\""$upstream"\"'))')"
+    upstream_repo_name="$(basename "$upstream")"
     "${GIT_CLONE[@]}" "$upstream" "$upstream_repo_name" > /dev/null
     cd "$upstream_repo_name"
     # seqeuence of commands inspired from:
     # https://stackoverflow.com/questions/15779740/how-to-update-my-fork-to-have-the-same-branches-and-tags-as-the-original-reposit
     # https://stackoverflow.com/questions/379081/track-all-remote-git-branches-as-local-branches/6300386#answer-27234826
-    git remote add "$FORKED_GIT_REMOTE_NAME" "$($PYTHON_EXECUTABLE -c 'import os; print(os.path.join('\""$WEBHOSTED_GIT_ACCOUNT_URL"\"', '\""$forked_repo_name"\"'))')"
+    git remote add "$FORKED_GIT_REMOTE_NAME" "$(pathjoin "$WEBHOSTED_GIT_ACCOUNT_URL" "$forked_repo_name")"
     for short_refname in $(git branch --remotes | grep --invert-match --extended-regexp "HEAD|master"); do 
         "${GIT_BRANCH[@]}" --track "${short_refname#*/}" "$short_refname"; 
     done
