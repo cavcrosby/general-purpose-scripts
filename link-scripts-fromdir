@@ -9,17 +9,17 @@ PROGRAM_NAME="$(basename "$0")"
 #
 # NOTE: LINK_DIR is the location of symlink
 # that points to f/file in this git repo
-LINK_DIR=""
+LINK_DIR=
 for f in ./*
 do
     # removing the $PWD notation './' from the file name
     f="${f:2:${#f}}"
     case "${f:2:${#f}}" in
-    "${PROGRAM_NAME}")      ;;
-    "README.md")            ;;
-    "LICENSE")              ;;
-    *)                      ln --symbolic --force "${PWD}/${f}" "${LINK_DIR}/$f"
-                            ;;
+        "${PROGRAM_NAME}")      ;;
+        "README.md")            ;;
+        "LICENSE")              ;;
+        *)                      ln --symbolic --force "${PWD}/${f}" "${LINK_DIR}/$f"
+                                ;;
     esac
 done
 
