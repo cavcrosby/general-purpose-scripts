@@ -19,7 +19,7 @@ PROGRAM_NAME = os.path.basename(sys.path[0])
 PROGRAM_ROOT = os.getcwd()
 JOBS_YAML_FILEPATH = f"{PROGRAM_ROOT}/jobs.yaml"
 JOB_DSL_ROOT_KEY_YAML = "jobs"
-JOB_DSL_SCRIPT_KEY_YAML = "scripts"
+JOB_DSL_SCRIPT_KEY_YAML = "script"
 JOB_DSL_FILENAME_REGEX = ".*job-dsl.*"
 GIT_REPOS_FILENAME = "jobs.toml"
 GIT_REPOS = toml.load(GIT_REPOS_FILENAME)["git"]["repo_urls"]
@@ -28,7 +28,7 @@ OTHER_PROGRAMS_NEEDED = ["git", "find"]
 
 def have_other_programs():
     """Checks if certain programs can be found on the PATH.
-    
+
     Returns
     -------
     bool
@@ -37,7 +37,7 @@ def have_other_programs():
     See Also
     --------
     OTHER_PROGRAMS_NEEDED
-    
+
     """
 
     for util in OTHER_PROGRAMS_NEEDED:
@@ -50,7 +50,7 @@ def have_other_programs():
 
 def find_job_dsl_file():
     """Locates job-dsl files in the PWD using regex.
-    
+
     Returns
     -------
     job_dsl_files: list of str
@@ -64,7 +64,7 @@ def find_job_dsl_file():
     See Also
     --------
     JOB_DSL_FILENAME_REGEX
-    
+
     """
 
     completed_process = subprocess.run(
@@ -95,12 +95,12 @@ def meets_job_dsl_filereqs(repo_name, job_dsl_files):
 
     Should note this is solely program specific and not
     related to the limitations/restrictions of the plugin itself.
-    
+
     Returns
     -------
     bool
         If all the job-dsl files meet the program requirements.
-    
+
     """
 
     num_of_job_dsls = len(job_dsl_files)
