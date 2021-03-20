@@ -146,6 +146,7 @@ def main():
             with open(job_dsl_filename, "r") as job_dsl_fh:
                 job_dsl_fc = job_dsl_fh.read()
             yaml = ruamel.yaml.YAML()
+            yaml.width = 1000
             with open(CASC_JENKINS_CONFIG_PATH, "r") as yaml_f:
                 data = yaml.load(yaml_f)
             with open(CASC_JENKINS_CONFIG_PATH, "w") as yaml_f:
