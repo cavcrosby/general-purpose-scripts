@@ -17,7 +17,7 @@ from ruamel.yaml.scalarstring import FoldedScalarString as folded
 
 PROGRAM_NAME = os.path.basename(sys.path[0])
 PROGRAM_ROOT = os.getcwd()
-JOBS_YAML_FILEPATH = f"{PROGRAM_ROOT}/jobs.yaml"
+CASC_JENKINS_CONFIG_PATH = os.environ["CASC_JENKINS_CONFIG"]
 JOB_DSL_ROOT_KEY_YAML = "jobs"
 JOB_DSL_SCRIPT_KEY_YAML = "script"
 JOB_DSL_FILENAME_REGEX = ".*job-dsl.*"
@@ -146,11 +146,9 @@ def main():
             with open(job_dsl_filename, "r") as job_dsl_fh:
                 job_dsl_fc = job_dsl_fh.read()
             yaml = ruamel.yaml.YAML()
-            if not pathlib.Path(JOBS_YAML_FILEPATH).exists():
-                open(JOBS_YAML_FILEPATH, "w").close()
-            with open(JOBS_YAML_FILEPATH, "r") as yaml_f:
+            with open(CASC_JENKINS_CONFIG_PATH, "r") as yaml_f:
                 data = yaml.load(yaml_f)
-            with open(JOBS_YAML_FILEPATH, "w") as yaml_f:
+            with open(CASC_JENKINS_CONFIG_PATH, "w") as yaml_f:
                 # NOTE: inspired from:
                 # https://stackoverflow.com/questions/35433838/how-to-dump-a-folded-scalar-to-yaml-in-python-using-ruamel
                 # fsc == filecontents-str
@@ -159,13 +157,15 @@ def main():
                 # create the 'JOB_DSL_SCRIPT_KEY_YAML: job_dsl_fsc' then
                 # either merge into JOB_DSL_ROOT_KEY_YAML
                 # or create the JOB_DSL_ROOT_KEY_YAML entry and append to it
-                if data:
+                if JOB_DSL_ROOT_KEY_YAML in data:
                     data[JOB_DSL_ROOT_KEY_YAML].append(
                         dict([(JOB_DSL_SCRIPT_KEY_YAML, job_dsl_fsc)])
                     )
                 else:
-                    data = dict([(JOB_DSL_SCRIPT_KEY_YAML, job_dsl_fsc)])
-                    data = dict([(JOB_DSL_ROOT_KEY_YAML, [data])])
+                    script_entry = dict(
+                        [(JOB_DSL_SCRIPT_KEY_YAML, job_dsl_fsc)]
+                    )
+                    data[JOB_DSL_ROOT_KEY_YAML] = [script_entry]
                 yaml.dump(data, yaml_f)
         except subprocess.CalledProcessError:
             print(completed_process.stderr.strip())
@@ -186,7 +186,9 @@ def main():
             # NOTE2: if sys.exit(1) is raised in except, can be carried over
             # into finally, thus allowing a system to exit with the status
             # code passed as argument as this exception is re-raised
-            if (
+            if not repo_name:
+                pass
+            elif (
                 os.getcwd() == PROGRAM_ROOT
                 and pathlib.Path(repo_name).exists()
             ):
