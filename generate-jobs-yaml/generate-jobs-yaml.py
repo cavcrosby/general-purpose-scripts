@@ -18,6 +18,9 @@ from ruamel.yaml.scalarstring import FoldedScalarString as folded
 PROGRAM_NAME = os.path.basename(sys.path[0])
 PROGRAM_ROOT = os.getcwd()
 CASC_JENKINS_CONFIG_PATH = os.environ["CASC_JENKINS_CONFIG"]
+MODIFIED_CASC_JENKINS_CONFIG_PATH = (
+    f"{PROGRAM_ROOT}/{os.path.basename(CASC_JENKINS_CONFIG_PATH)}"
+)
 JOB_DSL_ROOT_KEY_YAML = "jobs"
 JOB_DSL_SCRIPT_KEY_YAML = "script"
 JOB_DSL_FILENAME_REGEX = ".*job-dsl.*"
@@ -147,9 +150,14 @@ def main():
                 job_dsl_fc = job_dsl_fh.read()
             yaml = ruamel.yaml.YAML()
             yaml.width = 1000
-            with open(CASC_JENKINS_CONFIG_PATH, "r") as yaml_f:
+            if not pathlib.Path(MODIFIED_CASC_JENKINS_CONFIG_PATH).exists():
+                shutil.copyfile(
+                    src=CASC_JENKINS_CONFIG_PATH,
+                    dst=MODIFIED_CASC_JENKINS_CONFIG_PATH,
+                )
+            with open(MODIFIED_CASC_JENKINS_CONFIG_PATH, "r") as yaml_f:
                 data = yaml.load(yaml_f)
-            with open(CASC_JENKINS_CONFIG_PATH, "w") as yaml_f:
+            with open(MODIFIED_CASC_JENKINS_CONFIG_PATH, "w") as yaml_f:
                 # NOTE: inspired from:
                 # https://stackoverflow.com/questions/35433838/how-to-dump-a-folded-scalar-to-yaml-in-python-using-ruamel
                 # fsc == filecontents-str
