@@ -5,6 +5,7 @@ import shutil
 import sys
 import os
 import pathlib
+import argparse
 from os.path import realpath
 
 # Third Party Imports
@@ -14,19 +15,73 @@ from ruamel.yaml.scalarstring import FoldedScalarString as folded
 
 # Local Application Imports
 
+# general program configurations
 
 PROGRAM_NAME = os.path.basename(sys.path[0])
 PROGRAM_ROOT = os.getcwd()
-CASC_JENKINS_CONFIG_PATH = os.environ["CASC_JENKINS_CONFIG"]
-MODIFIED_CASC_JENKINS_CONFIG_PATH = (
-    f"{PROGRAM_ROOT}/{os.path.basename(CASC_JENKINS_CONFIG_PATH)}"
-)
+OTHER_PROGRAMS_NEEDED = ["git", "find", "docker"]
+
+# jenkins configurations as code (CasC) specifics
+
 JOB_DSL_ROOT_KEY_YAML = "jobs"
 JOB_DSL_SCRIPT_KEY_YAML = "script"
 JOB_DSL_FILENAME_REGEX = ".*job-dsl.*"
-GIT_REPOS_FILENAME = "jobs.toml"
-GIT_REPOS = toml.load(GIT_REPOS_FILENAME)["git"]["repo_urls"]
-OTHER_PROGRAMS_NEEDED = ["git", "find"]
+CASC_JENKINS_CONFIG_PATH = (
+    f"{PROGRAM_ROOT}/casc.yaml"  # os.environ["CASC_JENKINS_CONFIG"]
+)
+MODIFIED_CASC_JENKINS_CONFIG_PATH = (
+    f"{PROGRAM_ROOT}/mod_{os.path.basename(CASC_JENKINS_CONFIG_PATH)}"
+)
+
+# git configurations
+
+GIT_CONFIG_FILE = "jobs.toml"
+GIT_REPOS = toml.load(GIT_CONFIG_FILE)["git"]["repo_urls"]
+GIT_REPOS_DIR_PATH = f"{PROGRAM_ROOT}/git_repos"
+
+# argument labels
+# used at the command line and to reference values of arguments/options
+
+SUBCOMMAND_OPTION = "subcommand"
+GENERATE_JOB_YAML = "generate_job_yaml"
+GENERATE_JOB_YAML_CMD_OPTION = GENERATE_JOB_YAML.replace("_", "-")
+
+_DESC = """Description: A small utility to aid in the construction of Jenkins containers."""
+_parser = argparse.ArgumentParser(description=_DESC, allow_abbrev=False)
+_subparsers = _parser.add_subparsers(
+    title=f"{SUBCOMMAND_OPTION}s",
+    metavar=f"{SUBCOMMAND_OPTION}s [options ...]",
+    dest=SUBCOMMAND_OPTION,
+)
+_subparsers.required = True
+
+
+def retrieve_cmd_args():
+    """How arguments are retrieved from the command line.
+
+    Returns
+    -------
+    Namespace
+        An object that holds attributes pulled from the command line.
+
+    Raises
+    ------
+    SystemExit
+        If user input is not considered valid when parsing arguments.
+
+    """
+    try:
+        # generate-job-yaml
+        _subparsers.add_parser(
+            GENERATE_JOB_YAML_CMD_OPTION,
+            help="takes the casc.yaml and attaches a job entry to its block sequence",
+            allow_abbrev=False,
+        )
+
+        args = vars(_parser.parse_args())
+        return args
+    except SystemExit:
+        raise
 
 
 def have_other_programs():
@@ -42,13 +97,63 @@ def have_other_programs():
     OTHER_PROGRAMS_NEEDED
 
     """
-
     for util in OTHER_PROGRAMS_NEEDED:
         if shutil.which(util) is None:
             print(f"{PROGRAM_NAME}: {util} cannot be found on the PATH!")
             return False
 
     return True
+
+
+def fetch_git_repos():
+    """Fetches/clones git repos, at least those listed in GIT_REPOS.
+
+    These git repos will be placed into the directory from
+    the path ==> GIT_REPOS_DIR_PATH.
+
+    Returns
+    -------
+    git_repo_names: list of str
+        A list of git repo names.
+
+    Raises
+    ------
+    subprocess.CalledProcessError
+        If the git client program has issues when
+        running.
+    PermissionError
+        If the user running the command does not have write
+        permissions to GIT_REPOS_DIR_PATH.
+
+    See Also
+    --------
+    GIT_REPOS
+    GIT_REPOS_DIR_PATH
+
+    """
+    # so I remember, finally always executes
+    # from try-except-else-finally block.
+    try:
+        os.mkdir(GIT_REPOS_DIR_PATH)
+        os.chdir(GIT_REPOS_DIR_PATH)
+        for repo_url in GIT_REPOS:
+            repo_name = os.path.basename(repo_url)
+            completed_process = subprocess.run(
+                ["git", "clone", "--quiet", repo_url, repo_name],
+                stderr=subprocess.PIPE,
+                stdout=subprocess.PIPE,
+                encoding="utf-8",
+                check=True,
+            )
+    except subprocess.CalledProcessError:
+        print(completed_process.stderr.strip())
+        raise
+    except PermissionError:
+        raise
+    else:
+        return os.listdir()
+    finally:
+        os.chdir("..")
 
 
 def find_job_dsl_file():
@@ -69,7 +174,6 @@ def find_job_dsl_file():
     JOB_DSL_FILENAME_REGEX
 
     """
-
     completed_process = subprocess.run(
         [
             "find",
@@ -105,7 +209,6 @@ def meets_job_dsl_filereqs(repo_name, job_dsl_files):
         If all the job-dsl files meet the program requirements.
 
     """
-
     num_of_job_dsls = len(job_dsl_files)
     if num_of_job_dsls == 0:
         print(
@@ -123,20 +226,11 @@ def meets_job_dsl_filereqs(repo_name, job_dsl_files):
         return True
 
 
-def main():
-    """The main of the program."""
-    if not have_other_programs():
-        sys.exit(1)
-    for repo_url in GIT_REPOS:
-        repo_name = os.path.basename(repo_url)
+def generate_job_yaml(repo_names):
+    """"""
+    os.chdir(GIT_REPOS_DIR_PATH)
+    for repo_name in repo_names:
         try:
-            completed_process = subprocess.run(
-                ["git", "clone", "--quiet", repo_url, repo_name],
-                stderr=subprocess.PIPE,
-                stdout=subprocess.PIPE,
-                encoding="utf-8",
-                check=True,
-            )
             os.chdir(repo_name)
             job_dsl_filenames = find_job_dsl_file()
             if not meets_job_dsl_filereqs(repo_name, job_dsl_filenames):
@@ -157,6 +251,7 @@ def main():
                 )
             with open(MODIFIED_CASC_JENKINS_CONFIG_PATH, "r") as yaml_f:
                 data = yaml.load(yaml_f)
+            # TODO(conner@conneracrosby.tech): Add for ability for 'file' entry to be added vs script' ???
             with open(MODIFIED_CASC_JENKINS_CONFIG_PATH, "w") as yaml_f:
                 # NOTE: inspired from:
                 # https://stackoverflow.com/questions/35433838/how-to-dump-a-folded-scalar-to-yaml-in-python-using-ruamel
@@ -176,37 +271,35 @@ def main():
                     )
                     data[JOB_DSL_ROOT_KEY_YAML] = [script_entry]
                 yaml.dump(data, yaml_f)
-        except subprocess.CalledProcessError:
-            print(completed_process.stderr.strip())
-            sys.exit(1)
-        except PermissionError as e:
-            print(
-                f"{PROGRAM_NAME}: a particular file/path was unaccessible, {realpath(e)}"
-            )
-            sys.exit(1)
-        except Exception as e:
-            print(f"{PROGRAM_NAME}: an unknown error occurred:")
-            print(e)
-            sys.exit(1)
-        finally:
-            # NOTE: incase permission issues at some point while iterating
-            # over repos, be nice if program can clean up after itself
-            #
-            # NOTE2: if sys.exit(1) is raised in except, can be carried over
-            # into finally, thus allowing a system to exit with the status
-            # code passed as argument as this exception is re-raised
-            if not repo_name:
-                pass
-            elif (
-                os.getcwd() == PROGRAM_ROOT
-                and pathlib.Path(repo_name).exists()
-            ):
-                shutil.rmtree(repo_name)
-            else:
-                os.chdir("..")
-                shutil.rmtree(repo_name)
+        except PermissionError:
+            raise
+
+
+def main(cmd_args):
+    """The main of the program."""
+    if not have_other_programs():
+        sys.exit(1)
+    git_repo_names = fetch_git_repos()
+    try:
+        if cmd_args[SUBCOMMAND_OPTION] == GENERATE_JOB_YAML_CMD_OPTION:
+            generate_job_yaml(git_repo_names)
+            sys.exit(0)
+    except (subprocess.CalledProcessError, SystemExit):
+        sys.exit(1)
+    except PermissionError as e:
+        print(
+            f"{PROGRAM_NAME}: a particular file/path was unaccessible, {realpath(e)}"
+        )
+        sys.exit(1)
+    except Exception as e:
+        print(f"{PROGRAM_NAME}: an unknown error occurred:")
+        print(e)
+        sys.exit(1)
+    finally:
+        if pathlib.Path(GIT_REPOS_DIR_PATH).exists():
+            shutil.rmtree(GIT_REPOS_DIR_PATH)
 
 
 if __name__ == "__main__":
-    main()
-    sys.exit(0)
+    args = retrieve_cmd_args()
+    main(args)
