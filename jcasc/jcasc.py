@@ -39,19 +39,63 @@ GIT_CONFIG_FILE = "jobs.toml"
 GIT_REPOS = toml.load(GIT_CONFIG_FILE)["git"]["repo_urls"]
 GIT_REPOS_DIR_PATH = f"{PROGRAM_ROOT}/git_repos"
 
-# argument labels
-# used at the command line and to reference values of arguments/options
+# subcommands labels
+SUBCOMMAND = "subcommand"
+ADDJOBS_SUBCOMMAND = "addjobs"
 
-SUBCOMMAND_OPTION = "subcommand"
-GENERATE_JOB_YAML = "generate_job_yaml"
-GENERATE_JOB_YAML_CMD_OPTION = GENERATE_JOB_YAML.replace("_", "-")
+# positional/optional argument labels
+# used at the command line and to reference values of arguments
+
+CONFIG_PATH_SHORT_OPTION = "c"
+CONFIG_PATH_LONG_OPTION = "config"
+
+
+class JenkinsConfigurationAsCode:
+
+    pass
+
+
+class CustomHelpFormatter(argparse.HelpFormatter):
+
+    def _format_action_invocation(self, action):
+        if not action.option_strings:
+            default = self._get_default_metavar_for_positional(action)
+            (metavar,) = self._metavar_formatter(action, default)(1)
+            return metavar
+
+        else:
+            parts = []
+
+            # if the Optional doesn't take a value, format is:
+            #    -s, --long
+            if action.nargs == 0:
+                parts.extend(action.option_strings)
+
+            # if the Optional takes a value, formats are:
+            #    -s, --long=ARG(S) ==> if both short/long
+            #    --long=ARG(S) ==> if just long
+            #    -s=ARG(S) ==> if just short
+            else:
+                default = self._get_default_metavar_for_optional(action)
+                args_string = self._format_args(action, default)
+                for option_string in action.option_strings:
+                    if option_string == action.option_strings[-1]:
+                        parts.append(f"{option_string}={args_string}")
+                    else:
+                        parts.append(option_string)
+
+            return ", ".join(parts)
+
 
 _DESC = """Description: A small utility to aid in the construction of Jenkins containers."""
-_parser = argparse.ArgumentParser(description=_DESC, allow_abbrev=False)
+_parser = argparse.ArgumentParser(
+    description=_DESC,
+    allow_abbrev=False,
+)
 _subparsers = _parser.add_subparsers(
-    title=f"{SUBCOMMAND_OPTION}s",
-    metavar=f"{SUBCOMMAND_OPTION}s [options ...]",
-    dest=SUBCOMMAND_OPTION,
+    title=f"{SUBCOMMAND}s",
+    metavar=f"{SUBCOMMAND}s [options ...]",
+    dest=SUBCOMMAND,
 )
 _subparsers.required = True
 
@@ -71,17 +115,31 @@ def retrieve_cmd_args():
 
     """
     try:
-        # generate-job-yaml
-        _subparsers.add_parser(
-            GENERATE_JOB_YAML_CMD_OPTION,
-            help="takes the casc.yaml and attaches a job entry to its block sequence",
+        # addjobs
+        # NOTE: max_help_position is increased (default is 24)
+        # to allow arguments/options help messages be more indented
+        # reference:
+        # https://stackoverflow.com/questions/46554084/how-to-reduce-indentation-level-of-argument-help-in-argparse
+        addjobs = _subparsers.add_parser(
+            ADDJOBS_SUBCOMMAND,
+            help=f"will add Jenkins jobs to loaded configuration based on job-dsl file(s) in repo(s)",
+            formatter_class=lambda prog: CustomHelpFormatter(
+                prog,
+                max_help_position=30
+            ),
             allow_abbrev=False,
+        )
+        addjobs.add_argument(
+            f"-{CONFIG_PATH_SHORT_OPTION}",
+            f"--{CONFIG_PATH_LONG_OPTION}",
+            help="overwrite default config",
+            metavar="CONFIG_PATH",
         )
 
         args = vars(_parser.parse_args())
         return args
     except SystemExit:
-        raise
+        sys.exit(1)
 
 
 def have_other_programs():
@@ -281,7 +339,7 @@ def main(cmd_args):
         sys.exit(1)
     git_repo_names = fetch_git_repos()
     try:
-        if cmd_args[SUBCOMMAND_OPTION] == GENERATE_JOB_YAML_CMD_OPTION:
+        if cmd_args[SUBCOMMAND] == ADDJOBS_SUBCOMMAND:
             generate_job_yaml(git_repo_names)
             sys.exit(0)
     except (subprocess.CalledProcessError, SystemExit):
@@ -302,4 +360,5 @@ def main(cmd_args):
 
 if __name__ == "__main__":
     args = retrieve_cmd_args()
-    main(args)
+    # main(args)
+    print(args)
