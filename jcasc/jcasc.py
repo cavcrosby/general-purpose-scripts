@@ -61,12 +61,8 @@ class JenkinsConfigurationAsCode:
     JOB_DSL_ROOT_KEY_YAML = "jobs"
     JOB_DSL_SCRIPT_KEY_YAML = "script"
     JOB_DSL_FILENAME_REGEX = ".*job-dsl.*"
-    CASC_JENKINS_CONFIG_PATH = (
-        f"{PROGRAM_ROOT}/casc.yaml"  # os.environ["CASC_JENKINS_CONFIG"]
-    )
-    MODIFIED_CASC_JENKINS_CONFIG_PATH = (
-        f"{PROGRAM_ROOT}/mod_{os.path.basename(CASC_JENKINS_CONFIG_PATH)}"
-    )
+    # based on what the actual env var casc plugin looks for
+    CASC_JENKINS_CONFIG_ENV_VAR = "CASC_JENKINS_CONFIG"
     # readFileFromWorkspace('./foo')
     READ_FILE_FROM_WORKSPACE_EXPRESSION_REGEX = (
         r"readFileFromWorkspace\(.+\)(?=\))"
@@ -76,18 +72,26 @@ class JenkinsConfigurationAsCode:
         r"(?<=readFileFromWorkspace\(').+(?='\))"
     )
 
+    # class specific misc
+
+    REPOS_TO_TRANSFER_DIR_NAME = "projects"
+    PWD_IDENTIFER_REGEX = r"\.\/"
+    DEFAULT_STDOUT_FD = sys.stdout
+    YAML_PARSER_WIDTH = 1000
+    OTHER_PROGRAMS_NEEDED = ["git", "find", "docker"]
+
     # repo configurations
 
-    GIT_CONFIG_FILE = "jobs.toml"
-    GIT_REPOS = toml.load(GIT_CONFIG_FILE)["git"]["repo_urls"]
-    GIT_REPOS_DIR_PATH = f"{PROGRAM_ROOT}/git_repos"
+    GIT_CONFIG_FILE_PATH = "./jobs.toml"
+    GIT_REPOS_DIR_PATH = f"{PROGRAM_ROOT}/{REPOS_TO_TRANSFER_DIR_NAME}"
 
     # subcommands labels
 
     SUBCOMMAND = "subcommand"
     ADDJOBS_SUBCOMMAND = "addjobs"
-    PREPARE_REPOS = "prepare_repos"
-    PREPARE_REPOS_CLI_NAME = PREPARE_REPOS.replace("_", "-")
+    SETUP_SUBCOMMAND = "setup"
+    DOCKER_BUILD_SUBCOMMAND = "docker_build"
+    DOCKER_BUILD_SUBCOMMAND_CLI_NAME = "docker_build".replace("_", "-")
 
     # positional/optional argument labels
     # used at the command line and to reference values of arguments
@@ -101,14 +105,6 @@ class JenkinsConfigurationAsCode:
     TRANSFORM_READ_FILE_FROM_WORKSPACE_CLI_NAME = (
         TRANSFORM_READ_FILE_FROM_WORKSPACE_LONG_OPTION.replace("_", "-")
     )
-
-    # class specific misc
-
-    REPOS_TO_TRANSFER_DIR = "/projects/"
-    PWD_IDENTIFER_REGEX = r"\.\/"
-    DEFAULT_STDOUT_FD = sys.stdout
-    YAML_PARSER_WIDTH = 1000
-    OTHER_PROGRAMS_NEEDED = ["git", "find", "docker"]
 
     _DESC = """Description: A small utility to aid in the construction of Jenkins containers."""
     _arg_parser = argparse.ArgumentParser(
@@ -124,10 +120,41 @@ class JenkinsConfigurationAsCode:
 
     def __init__(self):
 
+        self.repo_urls = None
         self.repo_names = list()
         self.casc = ruamel.yaml.comments.CommentedMap()
+        self.toml = None
         self._yaml_parser = ruamel.yaml.YAML()
         self._yaml_parser.width = self.YAML_PARSER_WIDTH
+
+    @staticmethod
+    def _meets_job_dsl_filereqs(repo_name, job_dsl_files):
+        """Checks if the found job-dsl files meet specific requirements.
+
+        Should note this is solely program specific and not
+        related to the limitations/restrictions of the plugin itself.
+
+        Returns
+        -------
+        bool
+            If all the job-dsl files meet the program requirements.
+
+        """
+        num_of_job_dsls = len(job_dsl_files)
+        if num_of_job_dsls == 0:
+            print(
+                f"{PROGRAM_NAME}: {repo_name} does not have a job-dsl file, skip"
+            )
+            return False
+        elif num_of_job_dsls > 1:
+            # there should be no ambiguity in what job-dsl script to run
+            # NOTE: this is open to change
+            print(
+                f"{PROGRAM_NAME}: {repo_name} has more than one job-dsl file, skip!"
+            )
+            return False
+        else:
+            return True
 
     @classmethod
     def retrieve_cmd_args(cls):
@@ -170,14 +197,21 @@ class JenkinsConfigurationAsCode:
                 action="store_true",
                 help="transform readFileFromWorkspace functions to enable usage with casc && job-dsl plugin",
             )
-            # addrepos
-            # TODO(conner@conneracrosby.tech): Implement
-            addrepos = cls._arg_subparsers.add_parser(
-                cls.ADDJOBS_SUBCOMMAND,
-                help=f"will add Jenkins jobs to loaded configuration based on job-dsl file(s) in repo(s)",
-                formatter_class=lambda prog: CustomHelpFormatter(
-                    prog, max_help_position=35
-                ),
+
+            # setup
+            setup = cls._arg_subparsers.add_parser(
+                cls.SETUP_SUBCOMMAND,
+                help="invoked before running docker-build",
+                allow_abbrev=False,
+            )
+
+            # docker-build
+            # NOTE: assumes this script is invoked in a vsc repo that contains
+            # the dockerfile used to construct the docker Jenkins image
+            # NOTE2: aka, the PWD is the context sent to the docker daemon
+            docker_build = cls._arg_subparsers.add_parser(
+                cls.DOCKER_BUILD_SUBCOMMAND_CLI_NAME,
+                help="runs 'docker build'",
                 allow_abbrev=False,
             )
 
@@ -206,57 +240,6 @@ class JenkinsConfigurationAsCode:
                 return False
 
         return True
-
-    def _load_git_repos(self):
-        """Fetches/clones git repos, at least those listed in GIT_REPOS.
-
-        These git repos will be placed into the directory from
-        the path ==> GIT_REPOS_DIR_PATH.
-
-        Raises
-        ------
-        subprocess.CalledProcessError
-            If the git client program has issues when
-            running.
-        PermissionError
-            If the user running the command does not have write
-            permissions to GIT_REPOS_DIR_PATH.
-
-        See Also
-        --------
-        GIT_REPOS
-        GIT_REPOS_DIR_PATH
-
-        """
-        # so I remember, finally always executes
-        # from try-except-else-finally block.
-        try:
-            os.mkdir(self.GIT_REPOS_DIR_PATH)
-            os.chdir(self.GIT_REPOS_DIR_PATH)
-            for repo_url in self.GIT_REPOS:
-                repo_name = os.path.basename(repo_url)
-                completed_process = subprocess.run(
-                    ["git", "clone", "--quiet", repo_url, repo_name],
-                    stderr=subprocess.PIPE,
-                    stdout=subprocess.PIPE,
-                    encoding="utf-8",
-                    check=True,
-                )
-        except subprocess.CalledProcessError:
-            print(completed_process.stderr.strip())
-            raise
-        except PermissionError:
-            raise
-        else:
-            self.repo_names = os.listdir()
-        finally:
-            os.chdir("..")
-
-    def _load_casc(self, casc_path=CASC_JENKINS_CONFIG_PATH):
-        """"""
-        # TODO(conner@conneracrosby.tech): Implement
-        with open(casc_path, "r") as yaml_f:
-            self.casc = self._yaml_parser.load(yaml_f)
 
     @classmethod
     def _find_job_dsl_file(cls):
@@ -299,34 +282,107 @@ class JenkinsConfigurationAsCode:
         job_dsl_files = completed_process.stdout.split("\n")[:-1]
         return job_dsl_files
 
-    @staticmethod
-    def _meets_job_dsl_filereqs(repo_name, job_dsl_files):
-        """Checks if the found job-dsl files meet specific requirements.
+    def _clone_git_repos(self):
+        """Fetches/clones git repos.
 
-        Should note this is solely program specific and not
-        related to the limitations/restrictions of the plugin itself.
+        These git repos will be placed into the directory from
+        the path ==> GIT_REPOS_DIR_PATH.
 
-        Returns
-        -------
-        bool
-            If all the job-dsl files meet the program requirements.
+        Raises
+        ------
+        subprocess.CalledProcessError
+            If the git client program has issues when
+            running.
+        PermissionError
+            If the user running the command does not have write
+            permissions to GIT_REPOS_DIR_PATH.
+
+        See Also
+        --------
+        GIT_REPOS_DIR_PATH
 
         """
-        num_of_job_dsls = len(job_dsl_files)
-        if num_of_job_dsls == 0:
-            print(
-                f"{PROGRAM_NAME}: {repo_name} does not have a job-dsl file, skip"
-            )
-            return False
-        elif num_of_job_dsls > 1:
-            # there should be no ambiguity in what job-dsl script to run
-            # NOTE: this is open to change
-            print(
-                f"{PROGRAM_NAME}: {repo_name} has more than one job-dsl file, skip!"
-            )
-            return False
+
+        self.repo_urls = self.toml["git"]["repo_urls"]
+
+        if pathlib.Path(self.GIT_REPOS_DIR_PATH).exists():
+            shutil.rmtree(self.GIT_REPOS_DIR_PATH)
+
+        # so I remember, finally always executes
+        # from try-except-else-finally block.
+        try:
+            os.mkdir(self.GIT_REPOS_DIR_PATH)
+            os.chdir(self.GIT_REPOS_DIR_PATH)
+            for repo_url in self.repo_urls:
+                repo_name = os.path.basename(repo_url)
+                completed_process = subprocess.run(
+                    ["git", "clone", "--quiet", repo_url, repo_name],
+                    stderr=subprocess.PIPE,
+                    stdout=subprocess.PIPE,
+                    encoding="utf-8",
+                    check=True,
+                )
+        except subprocess.CalledProcessError:
+            print(completed_process.stderr.strip())
+            raise
+        except PermissionError:
+            raise
+        finally:
+            os.chdir("..")
+
+    def _load_git_repos(self):
+
+        if pathlib.Path(self.GIT_REPOS_DIR_PATH).exists():
+            os.chdir(self.GIT_REPOS_DIR_PATH)
+            self.repo_names = os.listdir()
+            os.chdir("..")
         else:
-            return True
+            # Either this means someone did not run the program setup first,
+            # or docker somehow missed COPY'ing to the image
+            print(
+                f"{PROGRAM_NAME}: '{self.REPOS_TO_TRANSFER_DIR_NAME}' could not be found"
+            )
+            sys.exit(1)
+
+    def _load_casc(self, casc_path):
+        """"""
+        # TODO(conner@conneracrosby.tech): Implement
+        try:
+            if casc_path is None:
+                casc_path = os.environ[self.CASC_JENKINS_CONFIG_ENV_VAR]
+            with open(casc_path, "r") as yaml_f:
+                self.casc = self._yaml_parser.load(yaml_f)
+        except TypeError:
+            print(f"{PROGRAM_NAME}: casc file could not be found at:")
+            print(casc_path)
+            sys.exit(1)
+        except KeyError:
+            print(
+                f"{PROGRAM_NAME}: {self.CASC_JENKINS_CONFIG_ENV_VAR} does not exist in the current env"
+            )
+            sys.exit(1)
+
+    def _load_toml(self):
+        """How toml files are loaded for the program.
+
+        Raises
+        ------
+        toml.decoder.TomlDecodeError
+            If the configuration file loaded has a
+            syntax error.
+
+        """
+        # TODO(conner@conneracrosby.tech): generalize configholder and make personal stdlib?
+        try:
+            self.toml = toml.load(self.GIT_CONFIG_FILE_PATH)
+        except PermissionError:
+            raise
+        except toml.decoder.TomlDecodeError as e:
+            print(
+                f"{PROGRAM_NAME}: the configuration file contains syntax error(s), more details below"
+            )
+            print(e)
+            sys.exit(1)
 
     def _transform_rffw(self, repo_name, job_dsl_fc):
         # assuming the job-dsl created also assumes the PWD == WORKSPACE
@@ -334,7 +390,7 @@ class JenkinsConfigurationAsCode:
 
             return re.sub(
                 self.PWD_IDENTIFER_REGEX,
-                f"{self.REPOS_TO_TRANSFER_DIR}{repo_name}/",
+                f"./{self.REPOS_TO_TRANSFER_DIR_NAME}/{repo_name}/",
                 rffw_arg,
             )
 
@@ -363,7 +419,6 @@ class JenkinsConfigurationAsCode:
                     repo_name, job_dsl_filenames
                 ):
                     os.chdir("..")
-                    shutil.rmtree(repo_name)
                     continue
                 job_dsl_filename = job_dsl_filenames[0]
 
@@ -398,7 +453,12 @@ class JenkinsConfigurationAsCode:
         if not self._have_other_programs():
             sys.exit(1)
         try:
-            if cmd_args[self.SUBCOMMAND] == self.ADDJOBS_SUBCOMMAND:
+            self._load_toml()
+            if cmd_args[self.SUBCOMMAND] == self.SETUP_SUBCOMMAND:
+                if pathlib.Path(self.GIT_REPOS_DIR_PATH).exists():
+                    shutil.rmtree(self.GIT_REPOS_DIR_PATH)
+                self._clone_git_repos()
+            elif cmd_args[self.SUBCOMMAND] == self.ADDJOBS_SUBCOMMAND:
                 self._load_git_repos()
                 self._load_casc(cmd_args[self.CASC_PATH_LONG_OPTION])
                 self._addjobs(
@@ -407,8 +467,8 @@ class JenkinsConfigurationAsCode:
                     ]
                 )
                 self._yaml_parser.dump(self.casc, self.DEFAULT_STDOUT_FD)
-                sys.exit(0)
-        except (subprocess.CalledProcessError, SystemExit):
+            sys.exit(0)
+        except (subprocess.CalledProcessError):
             sys.exit(1)
         except PermissionError as e:
             print(
@@ -419,9 +479,6 @@ class JenkinsConfigurationAsCode:
             traceback.print_exception(type(e), e, e.__traceback__)
             print(f"{PROGRAM_NAME}: an unknown error occurred, see the above!")
             sys.exit(1)
-        finally:
-            if pathlib.Path(self.GIT_REPOS_DIR_PATH).exists():
-                shutil.rmtree(self.GIT_REPOS_DIR_PATH)
 
 
 if __name__ == "__main__":
