@@ -24,6 +24,14 @@ PROGRAM_ROOT = os.getcwd()
 
 
 class CustomHelpFormatter(argparse.HelpFormatter):
+    """A custom HelpFormatter subclass used by argparse.ArgumentParser objects.
+
+    Main change from the original argparse.HelpFormatter has where
+    the format of the option string(s) with its argument
+    has changed. See 'NOTE' below.
+
+    """
+
     def _format_action_invocation(self, action):
         if not action.option_strings:
             default = self._get_default_metavar_for_positional(action)
@@ -38,10 +46,10 @@ class CustomHelpFormatter(argparse.HelpFormatter):
             if action.nargs == 0:
                 parts.extend(action.option_strings)
 
-            # if the Optional takes a value, formats are:
-            #    -s, --long=ARG(S) ==> if both short/long
-            #    --long=ARG(S) ==> if just long
-            #    -s=ARG(S) ==> if just short
+            # NOTE: if the Optional takes a value, formats are:
+            #    -s, --long=ARG ==> if both short/long
+            #    --long=ARG ==> if just long
+            #    -s=ARG ==> if just short
             else:
                 default = self._get_default_metavar_for_optional(action)
                 args_string = self._format_args(action, default)
@@ -55,6 +63,8 @@ class CustomHelpFormatter(argparse.HelpFormatter):
 
 
 class JenkinsConfigurationAsCode:
+    """"""
+    # TODO(conner@conneracrosby.tech): Create class doc string!
 
     # jenkins configurations as code (CasC) specifics
 
@@ -331,13 +341,20 @@ class JenkinsConfigurationAsCode:
             os.chdir("..")
 
     def _load_git_repos(self):
+        """How git repos are loaded.
 
+        Raises
+        ------
+        SystemExit
+            If GIT_REPOS_DIR_PATH could not be found.
+
+        """
         if pathlib.Path(self.GIT_REPOS_DIR_PATH).exists():
             os.chdir(self.GIT_REPOS_DIR_PATH)
             self.repo_names = os.listdir()
             os.chdir("..")
         else:
-            # Either this means someone did not run the program setup first,
+            # either this means someone did not run the program setup first,
             # or docker somehow missed COPY'ing to the image
             print(
                 f"{PROGRAM_NAME}: '{self.REPOS_TO_TRANSFER_DIR_NAME}' could not be found"
@@ -345,8 +362,24 @@ class JenkinsConfigurationAsCode:
             sys.exit(1)
 
     def _load_casc(self, casc_path):
-        """"""
-        # TODO(conner@conneracrosby.tech): Implement
+        """How the yaml required by the JCasC plugin is loaded.
+
+        Usually this is called 'casc.yaml' but can be set to something
+        different depending on the CASC_JENKINS_CONFIG_ENV_VAR.
+
+        Parameters
+        ----------
+        casc_path : str
+            Path of the casc file.
+
+        Raises
+        ------
+        SystemExit
+            If the casc file does not exist on the filesystem,
+            based on the passed in path, or if the CASC_JENKINS_CONFIG_ENV_VAR
+            does not exist in the current env.
+        
+        """
         try:
             if casc_path is None:
                 casc_path = os.environ[self.CASC_JENKINS_CONFIG_ENV_VAR]
@@ -385,6 +418,23 @@ class JenkinsConfigurationAsCode:
             sys.exit(1)
 
     def _transform_rffw(self, repo_name, job_dsl_fc):
+        """Transforms 'readFileFromWorkspace' expressions from job-dsl(s).
+
+        Parameters
+        ----------
+        repo_name : str
+            Name of the vcs repo.
+        job_dsl_fc : str
+            Contents of the job-dsl as a str.
+
+        Returns
+        -------
+        job_dsl_fc : str
+            Same contents but with readFileFromWorkspace
+            expressions transformed into something different to
+            be compatible with the docker Jenkins image.
+
+        """
         # assuming the job-dsl created also assumes the PWD == WORKSPACE
         def _transform_workspace_path(rffw_arg):
 
@@ -408,8 +458,19 @@ class JenkinsConfigurationAsCode:
         return job_dsl_fc
 
     def _addjobs(self, t_rffw):
-        """"""
-        # TODO(conner@conneracrosby.tech): Implement
+        """Adds job-dsl(s) content(s) to yaml used by JCasC.
+
+        Parameters
+        ----------
+        t_rffw : bool
+            Whether or not to transform 'readFileFromWorkspace' expressions
+            from job-dsl(s).
+
+        See Also
+        --------
+        _transform_rffw
+        
+        """
         os.chdir(self.GIT_REPOS_DIR_PATH)
         for repo_name in self.repo_names:
             try:
