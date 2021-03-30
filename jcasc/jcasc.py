@@ -4,6 +4,7 @@ import subprocess
 import shutil
 import sys
 import re
+import signal
 import traceback
 import os
 import pathlib
@@ -63,8 +64,32 @@ class CustomHelpFormatter(argparse.HelpFormatter):
 
 
 class JenkinsConfigurationAsCode:
-    """"""
-    # TODO(conner@conneracrosby.tech): Create class doc string!
+    """A small utility to aid in the construction of Jenkins images/containers.
+
+    From a high level, the functionality implemented is to allow Jenkins
+    images to be created with differing jobs, all in thanks to the
+    job-dsl plugin. Also the JCasC plugin is in use to automate the Jenkins
+    installation on to the containers. Finally, Docker containers are the types
+    of images constructed.
+
+    Attributes
+    ----------
+    REPOS_TO_TRANSFER_DIR_NAME : str
+        This directory copied over to the docker container, for
+        the job-dsl plugin to use.
+    DEFAULT_STDOUT_FD : _io.TextIOWrapper
+        Currently where any yaml output is directed to by default.
+    YAML_PARSER_WIDTH : int
+        Used by the yaml parser on when to wrap text.
+    OTHER_PROGRAMS_NEEDED : list of str
+        Other programs on the PATH needed by this program.
+
+    See Also
+    --------
+    job-dsl plugin ==> https://plugins.jenkins.io/job-dsl/
+    JCasC plugin ==> https://www.jenkins.io/projects/jcasc/
+    
+    """
 
     # jenkins configurations as code (CasC) specifics
 
@@ -81,11 +106,15 @@ class JenkinsConfigurationAsCode:
     READ_FILE_FROM_WORKSPACE_ARGUMENT_REGEX = (
         r"(?<=readFileFromWorkspace\(').+(?='\))"
     )
+    READ_FILE_FROM_WORKSPACE_ARGUMENT_PLACEHOLDER = "_PLACEHOLDER"
+    READ_FILE_FROM_WORKSPACE_EXPRESSION_REPLACEMENT = (
+        f"new File('{READ_FILE_FROM_WORKSPACE_ARGUMENT_PLACEHOLDER}').text"
+    )
+    PWD_IDENTIFER_REGEX = r"\.\/"
 
     # class specific misc
 
     REPOS_TO_TRANSFER_DIR_NAME = "projects"
-    PWD_IDENTIFER_REGEX = r"\.\/"
     DEFAULT_STDOUT_FD = sys.stdout
     YAML_PARSER_WIDTH = 1000
     OTHER_PROGRAMS_NEEDED = ["git", "find", "docker"]
@@ -97,6 +126,7 @@ class JenkinsConfigurationAsCode:
 
     # subcommands labels
 
+    # replace(old, new)
     SUBCOMMAND = "subcommand"
     ADDJOBS_SUBCOMMAND = "addjobs"
     SETUP_SUBCOMMAND = "setup"
@@ -106,7 +136,6 @@ class JenkinsConfigurationAsCode:
     # positional/optional argument labels
     # used at the command line and to reference values of arguments
 
-    # replace(old, new)
     CASC_PATH_SHORT_OPTION = "c"
     CASC_PATH_LONG_OPTION = "casc_path"
     CASC_PATH_LONG_OPTION_CLI_NAME = CASC_PATH_LONG_OPTION.replace("_", "-")
@@ -115,6 +144,9 @@ class JenkinsConfigurationAsCode:
     TRANSFORM_READ_FILE_FROM_WORKSPACE_CLI_NAME = (
         TRANSFORM_READ_FILE_FROM_WORKSPACE_LONG_OPTION.replace("_", "-")
     )
+    DOCKER_TAG_POSITIONAL_ARG = "tag"
+    OFFICIAL_BUILD_SHORT_OPTION = "b"
+    OFFICIAL_BUILD_LONG_OPTION = "officialbld"
 
     _DESC = """Description: A small utility to aid in the construction of Jenkins containers."""
     _arg_parser = argparse.ArgumentParser(
@@ -131,6 +163,9 @@ class JenkinsConfigurationAsCode:
     def __init__(self):
 
         self.repo_urls = None
+        self.repo_commit = None
+        self.repo_branch = None
+        self.repo_tag = None
         self.repo_names = list()
         self.casc = ruamel.yaml.comments.CommentedMap()
         self.toml = None
@@ -219,10 +254,23 @@ class JenkinsConfigurationAsCode:
             # NOTE: assumes this script is invoked in a vsc repo that contains
             # the dockerfile used to construct the docker Jenkins image
             # NOTE2: aka, the PWD is the context sent to the docker daemon
+            # NOTE3: Branch/commit info will be based on the current context
+            # of the repo
             docker_build = cls._arg_subparsers.add_parser(
                 cls.DOCKER_BUILD_SUBCOMMAND_CLI_NAME,
                 help="runs 'docker build'",
                 allow_abbrev=False,
+            )
+            docker_build.add_argument(
+                f"{cls.DOCKER_TAG_POSITIONAL_ARG}",
+                metavar="TAG",
+                help="this is to be a normal docker tag, or name:tag format",
+            )
+            docker_build.add_argument(
+                f"-{cls.OFFICIAL_BUILD_SHORT_OPTION}",
+                f"--{cls.OFFICIAL_BUILD_LONG_OPTION}",
+                action="store_true",
+                help="perform a docker build that is considered non-testing",
             )
 
             args = vars(cls._arg_parser.parse_args())
@@ -378,7 +426,7 @@ class JenkinsConfigurationAsCode:
             If the casc file does not exist on the filesystem,
             based on the passed in path, or if the CASC_JENKINS_CONFIG_ENV_VAR
             does not exist in the current env.
-        
+
         """
         try:
             if casc_path is None:
@@ -417,6 +465,103 @@ class JenkinsConfigurationAsCode:
             print(e)
             sys.exit(1)
 
+    def _load_current_git_commit(self):
+        """Grabs the latest commit from the git repo.
+
+        Assumes the PWD is in a git 'working' directory.
+
+        """
+        # credits to:
+        # https://stackoverflow.com/questions/11168141/find-which-commit-is-currently-checked-out-in-git#answer-42549385
+        completed_process = subprocess.run(
+            [
+                "git",
+                "show",
+                "--format=%h",
+                "--no-patch",
+            ],
+            stderr=subprocess.PIPE,
+            stdout=subprocess.PIPE,
+            encoding="utf-8",
+            check=True,
+        )
+        self.repo_commit = completed_process.stdout.strip()[:-1]
+
+    def _load_current_git_branch(self):
+        """Grabs the current branch from the git repo.
+
+        Assumes the PWD is in a git 'working' directory.
+
+        """
+        completed_process = subprocess.run(
+            [
+                "git",
+                "branch",
+                "--show-current",
+            ],
+            stderr=subprocess.PIPE,
+            stdout=subprocess.PIPE,
+            encoding="utf-8",
+            check=True,
+        )
+        self.repo_branch = completed_process.stdout.strip()[:-1]
+
+    def _docker_build(self, tag, officialbld):
+        """Runs a preset docker build command.
+
+        Should note only SIGINT are passed to the docker build
+        process. This should be ok but can be opened to
+        pass in/handle more.
+
+        Parameters
+        ----------
+        tag : str
+            This should be a docker tag, or 'name:tag'.
+        officialbld : bool
+            Is this an 'official' build?
+
+        Notes
+        -----
+        SIGSTOP according to the docs.python.org "...cannot be blocked.".
+        Assuming this also means it cannot be caught either.
+
+
+        """
+
+        def sigint_handler(sigint, frame):
+            docker_process.send_signal(sigint)
+
+        if not officialbld:
+            docker_process = subprocess.Popen(
+                [
+                    "docker",
+                    "build",
+                    "--no-cache",
+                    tag,
+                    ".",
+                ],
+                env=os.environ,
+            )
+        else:
+            docker_process = subprocess.Popen(
+                [
+                    "docker",
+                    "build",
+                    "--no-cache",
+                    "--build-arg",
+                    f"BRANCH={self.repo_branch}",
+                    "--build-arg",
+                    f"COMMIT={self.repo_commit}",
+                    tag,
+                    ".",
+                ],
+                env=os.environ,
+            )
+
+        # check to see if docker_process has exited
+        while docker_process.poll() is None:
+            signal.signal(signal.SIGINT, sigint_handler)
+
     def _transform_rffw(self, repo_name, job_dsl_fc):
         """Transforms 'readFileFromWorkspace' expressions from job-dsl(s).
 
@@ -436,23 +581,34 @@ class JenkinsConfigurationAsCode:
 
         """
         # assuming the job-dsl created also assumes the PWD == WORKSPACE
-        def _transform_workspace_path(rffw_arg):
+        def _transform_rffw_exp(rffw_exp):
 
-            return re.sub(
+            regex = re.compile(self.READ_FILE_FROM_WORKSPACE_ARGUMENT_REGEX)
+            rffw_arg = regex.search(rffw_exp)[0]
+            t_rffw_arg = re.sub(
                 self.PWD_IDENTIFER_REGEX,
                 f"./{self.REPOS_TO_TRANSFER_DIR_NAME}/{repo_name}/",
                 rffw_arg,
             )
+            # t_rffw_exp
+            return (
+                self.READ_FILE_FROM_WORKSPACE_EXPRESSION_REPLACEMENT.replace(
+                    self.READ_FILE_FROM_WORKSPACE_ARGUMENT_PLACEHOLDER,
+                    t_rffw_arg,
+                )
+            )
 
-        rffw_args = dict()
-        for rffw_arg in re.findall(
-            self.READ_FILE_FROM_WORKSPACE_ARGUMENT_REGEX, job_dsl_fc
+        rffw_exps = dict()
+        for rffw_exp in re.findall(
+            self.READ_FILE_FROM_WORKSPACE_EXPRESSION_REGEX, job_dsl_fc
         ):
-            rffw_args[rffw_arg] = _transform_workspace_path(rffw_arg)
-        for rffw_arg, t_rffw_arg in rffw_args.items():
+            rffw_exps[rffw_exp] = _transform_rffw_exp(rffw_exp)
+        # rffw_exp may need to have some characters escaped
+        # e.g. '(', ')', '.'
+        for rffw_exp, t_rffw_exp in rffw_exps.items():
             job_dsl_fc = re.sub(
-                rffw_arg,
-                t_rffw_arg,
+                re.escape(rffw_exp),
+                t_rffw_exp,
                 job_dsl_fc,
             )
         return job_dsl_fc
@@ -469,7 +625,7 @@ class JenkinsConfigurationAsCode:
         See Also
         --------
         _transform_rffw
-        
+
         """
         os.chdir(self.GIT_REPOS_DIR_PATH)
         for repo_name in self.repo_names:
@@ -528,6 +684,13 @@ class JenkinsConfigurationAsCode:
                     ]
                 )
                 self._yaml_parser.dump(self.casc, self.DEFAULT_STDOUT_FD)
+            elif cmd_args[self.SUBCOMMAND] == self.DOCKER_BUILD_SUBCOMMAND:
+                self._load_current_git_branch()
+                self._load_current_git_commit()
+                self._docker_build(
+                    cmd_args[self.DOCKER_TAG_POSITIONAL_ARG],
+                    cmd_args[self.OFFICIAL_BUILD_LONG_OPTION],
+                )
             sys.exit(0)
         except (subprocess.CalledProcessError):
             sys.exit(1)
