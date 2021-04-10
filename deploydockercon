@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-# Used to redeploy (a) docker container on a machine.
+# Used to (re)deploy (a) docker container(s) on a machine.
 # Ideally this script will be ran as a cron job.
 
 # NOTE: no set -e because if lots of commands then
@@ -39,7 +39,7 @@ if ! docker pull "$FULL_DOCKER_CONTAINER_TAG"; then
 fi
 
 if ! docker_deploy; then
-    echo "${PROGRAM_NAME}: redeploying the container failed"
+    echo "${PROGRAM_NAME}: deploying the container failed"
     exit 1
 fi
 
@@ -55,7 +55,7 @@ for cmd in "${POST_DEPLOYMENT_COMMANDS[@]}"; do
     fi
 done
 
-echo "${PROGRAM_NAME}: redeploying the container was successful"
+echo "${PROGRAM_NAME}: deploying the container was successful"
 
 if [ -n "$running_post_deployment_cmds_nonsuccessful" ]; then
     echo "${PROGRAM_NAME}: running post deployment commands were NOT successful!"
