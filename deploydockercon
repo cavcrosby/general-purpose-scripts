@@ -18,7 +18,7 @@ FULL_DOCKER_CONTAINER_TAG="${DOCKER_REGISTRY_URL}/${DOCKER_CONTAINER_TAG}"
 running_post_deployment_cmds_nonsuccessful=
 POST_DEPLOYMENT_COMMANDS=(
     # these should be strs to run after deploying the docker container, e.g.
-    # java -jar agent.jar -jnlpUrl http://localhost:8080/computer/foo-host/jenkins-agent.jnlp -secret thefoo -workDir "/var/lib/jenkins-nodes/foo-host"
+    # java -jar agent.jar -jnlpUrl http://localhost:8080/computer/foo-host/jenkins-agent.jnlp -secret thefoo -workDir "/var/lib/jenkins-agents/foo-host"
 )
 
 docker_deploy () {
