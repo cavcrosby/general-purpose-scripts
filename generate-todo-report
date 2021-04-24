@@ -32,8 +32,9 @@ walkdirtree () {
     fi
 }
 
-for f in $(walkdirtree "$ROOT_DIR"); do
-    grep --initial-tab --regexp "$PATTERN" --with-filename "$f"
+# fp file_path
+for fp in $(walkdirtree "$ROOT_DIR"); do
+    grep --initial-tab --regexp "$PATTERN" --with-filename "$fp"
 done
 
 exit 0
