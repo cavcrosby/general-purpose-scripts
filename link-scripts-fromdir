@@ -7,8 +7,8 @@ PROGRAM_NAME="$(basename "$0")"
 # for reference, usage str for ln
 # Usage: ln [OPTION]... TARGET LINK_NAME
 #
-# NOTE: LINK_DIR is the location of symlink
-# that points to f/file in this git repo
+# NOTE: LINK_DIR is the location for symlink(s)
+# that points to the f(s)/file(s) in this git repo
 LINK_DIR=
 for f in ./*
 do
