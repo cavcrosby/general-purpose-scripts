@@ -29,6 +29,7 @@ TEMP_DIR_NAME="$PROGRAM_NAME-temp"
 DISABLE_GITHUB_ACTIONS_SCRIPTNAME="disable-github-actions.py"
 FORKED_GIT_REMOTE_NAME="custom-fork"
 WEBHOSTED_GIT_ACCOUNT_URL=""
+# TODO(conner@conneracrosby.tech): GitHub now has GUI capabilities to merge forked repos from upstream, maybe see if API has this as well?
 declare -A FORKED_REPO_NAMES_TO_UPSTREAM_URLS=(
     # ["forked_repo_name"]=>"upstream_url"
 )
