@@ -47,8 +47,8 @@ fi
 for cmd in "${POST_DEPLOYMENT_COMMANDS[@]}"; do
     # NOTE: some commands might need to run in the background,
     # this is defined on a per cmd basis
-    # TODO(conner@conneracrosby.tech): why not just use 'if ! $?; then ...'
-    # TODO(conner@conneracrosby.tech): there maybe a better way to signal nonsuccessful post cmds ran?
+    # TODO(cavcrosby): why not just use 'if ! $?; then ...'
+    # TODO(cavcrosby): there maybe a better way to signal nonsuccessful post cmds ran?
     "${cmd[@]}"
     if [ "$?" -ne 0 ]; then
         running_post_deployment_cmds_nonsuccessful="true"

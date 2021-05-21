@@ -47,7 +47,7 @@ class GitHubAuth(requests.auth.AuthBase):
 try:
     REPO = sys.argv[1]
 except IndexError:
-    # TODO(conner@conneracrosby.tech): Usage strings and Program names
+    # TODO(cavcrosby): Usage strings and Program names
     # are not consistent across scripts this may also apply to other repos
     print(f"Usage: {sys.argv[0]} GIT_REPO_NAME")
     sys.exit(1)
