@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/sh
 #
 # My attempt in creating something similar to Python's
 # os.path.join (and any other language's variation of this).
@@ -12,22 +12,39 @@
 #   - Conjoined file entries to stdout
 #######################################
 pathjoin () {
-    # NOTE: getting the PROGRAM_NAME currently is bash specfic
-    PROGRAM_NAME="${FUNCNAME[0]}"
+    PROGRAM_NAME="pathjoin"
     if [ "$#" -eq 0 ]; then
-        echo "${PROGRAM_NAME}: at least one argument is expected"
+        	cat << _EOF_
+Usage: $PROGRAM_NAME [PATH...]
+
+Takes one or more filesystem paths and conjoins them. Duplicate
+forward slashes (e.g. $PROGRAM_NAME foo/ /bar) are accounted for,
+even though technically POSIX treats duplicate forward slashes as one
+(e.g. /foo/bar would be the result from the above).
+
+_EOF_
         return 1
     fi
 
     completed_path=""
     while [ "$#" -gt 0 ]; do
         arg="$1"
-        if [ "${#completed_path}" -eq 0 ]; then : # don't do anything (the null-operator :)
-        # ${string:position:length}
-        # NOTE: looking to see if directory separator is added in front of arg or
-        # is the last char from the completed_path
-        elif [ "${completed_path:((${#completed_path}-1)):1}" != '/' ] && [ "${arg:0:1}" != '/' ]; then
+        # NOTE: -2 to deal with newline from echo, sh doesn't understand flags
+        # to echo...apparently and to deal with getting right end index
+        completed_path_end=$(($(echo "$completed_path" | wc --chars)-2))
+        if [ "${#completed_path}" -eq 0 ] && [ "$arg" != "/" ]; then
             arg="/${arg}"
+        # sh version of ${string:position:length}, inspired by:
+        # https://mywiki.wooledge.org/Bashism
+        # $(expr "x$name" : "x.\{0,$n\}\(.\{0,$l\}\)")
+        elif [ "$(expr "$completed_path" : ".\{0,$completed_path_end\}\(.\{0,1\}\)")" != '/' ] && [ "$(expr "$arg" : ".\{0,0\}\(.\{0,1\}\)")" != '/' ]; then
+            # NOTE: looking to see if directory separator is added in front of arg OR
+            # is the last char from the completed_path
+            arg="/${arg}"
+        elif [ "$(expr "$completed_path" : ".\{0,$completed_path_end\}\(.\{0,1\}\)")" = '/' ] && [ "$(expr "$arg" : ".\{0,0\}\(.\{0,1\}\)")" = '/' ]; then
+            # NOTES: looking to see if directory separator is added in front of arg AND
+            # is the last char from the completed_path. -2 to deal with newline and because 
+            arg="$(expr "$arg" : ".\{0,1\}\(.\{0,$(($(echo "$arg" | wc --chars)-2))\}\)")"
         fi
         completed_path="${completed_path}${arg}"
         shift
@@ -37,6 +54,10 @@ pathjoin () {
     return 0
 }
 
-pathjoin "$@"
-
-exit
+# NOTES: are we executing the script (rather than sourcing it)?
+# Inspired by: https://superuser.com/questions/731425/bash-detect-execute-vs-source-in-a-script
+# shellcheck disable=2116
+if [ "$(basename "$0")" = "pathjoin" ]; then
+    pathjoin "$@"
+    exit
+fi
