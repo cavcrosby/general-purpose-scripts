@@ -1,0 +1,60 @@
+#!/bin/bash
+#
+# Small script that decapitalizes every file
+# starting at the PWD.
+
+set -e
+
+# constants and defined cli parameters, opt ==> option
+PROGRAM_NAME="$(basename "$0")"
+readonly PROGRAM_NAME
+readonly HELP_SHORT_OPT="h"
+readonly HELP_LONG_OPT="help"
+# combining all short opts to form shortopts for getopt
+readonly short_opts="${HELP_SHORT_OPT}"
+
+help_option=false
+# do not combine long opts into their own variable
+eval set -- "$(getopt --options "${short_opts}" --long "${HELP_LONG_OPT}" --name "${PROGRAM_NAME}" -- "$@")"
+
+# determine behavior of program from cli arguments,
+# cli ==> command line interface
+while true; do
+    case "$1" in
+        "-${HELP_SHORT_OPT}" | "--${HELP_LONG_OPT}")    help_option=true; shift ;;
+        "--")                                           shift; break ;;
+        *)                                              break ;;
+    esac
+done
+
+# for reference on why just '...|| $help_option' is a bad idea:
+# https://stackoverflow.com/questions/2953646/how-can-i-declare-and-use-boolean-variables-in-a-shell-script#answer-21210966
+if [ "${help_option}" = true ]; then
+        cat << _EOF_
+Usage: ${PROGRAM_NAME} [-${HELP_SHORT_OPT}]
+
+Recursively decapitalizes each file starting in the present working
+directory (PWD).
+
+Options:
+    -${HELP_SHORT_OPT}, --${HELP_LONG_OPT}      show this help message and exit
+
+_EOF_
+    exit 0
+fi
+
+files="$(find "${PWD}" -iname '*[[:upper:]]*')"
+old_ifs="${IFS}"
+IFS=$'\n'
+
+# f ==> file
+for f in ${files}; do 
+    lower_f="$(echo "${f}" | tr '[:upper:]' '[:lower:]')";
+    cd "$(dirname "${f}")" || exit
+    mv "$(basename "${f}")" "$(basename "${lower_f}")";
+    cd - > /dev/null || exit
+done
+
+IFS="${old_ifs}"
+
+exit 0
