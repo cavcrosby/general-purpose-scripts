@@ -65,32 +65,32 @@ _EOF_
 
     completed_path="${path_prefix}"
     while [ $# -gt 0 ]; do
+        # arg ==> argument
         arg="$1"
-        # NOTE(cavcrosby): -2 to deal with newline from echo, sh doesn't understand flags
-        # to echo...apparently and to deal with getting right end index
+        # Subtract 2 is needed to deal with newline from echo, sh doesn't understand
+        # flags to echo...apparently, and to deal with getting right end index.
         completed_path_end=$(( $(echo "${completed_path}" | wc --chars) - 2 ))
         if [ "${#completed_path}" -eq 1 ] && [ "${arg}" = '/' ]; then
-            # don't do anything, ignore the '/' inserted as an argument
+            # Don't do anything, ignore the '/' inserted as an argument.
             arg=
         elif [ "${#completed_path}" -eq 1 ] \
             && [ "$(expr "${arg}" : ".\{0,0\}\(.\{0,1\}\)")" != '/' ]; then
-            # NOTES(cavcrosby): if this will be the first path to be added to the
-            # completed_path AND if the directory separator is NOT the first character of
-            # the arg.
-            # Don't do anything, as this is the first part of the completed path.
+            # If this will be the first path to be added to the completed_path and if the
+            # directory separator is NOT the first character of the arg. Don't do anything,
+            # as this is the first part of the completed path.
             :
         # sh version of ${string:position:length}, inspired by:
         # https://mywiki.wooledge.org/Bashism
         # $(expr "x$name" : "x.\{0,$n\}\(.\{0,$l\}\)")
         elif [ "$(expr "${completed_path}" : ".\{0,${completed_path_end}\}\(.\{0,1\}\)")" != '/' ] \
             && [ "$(expr "${arg}" : ".\{0,0\}\(.\{0,1\}\)")" != '/' ]; then
-            # NOTE(cavcrosby): looking to see if the directory separator is NOT the last char
-            # of the completed_path AND is NOT the first character of the arg
+            # Looking to see if the directory separator is not the last character of the
+            # completed_path and is not the first character of the arg.
             arg="/${arg}"
         elif [ "$(expr "${completed_path}" : ".\{0,${completed_path_end}\}\(.\{0,1\}\)")" = '/' ] \
             && [ "$(expr "${arg}" : ".\{0,0\}\(.\{0,1\}\)")" = '/' ]; then
-            # NOTE(cavcrosby): looking to see if the directory separator is the last char of
-            # the completed_path AND is the first character of the arg
+            # Looking to see if the directory separator is the last character of the
+            # completed_path and is the first character of the arg.
             arg="$(expr "${arg}" : ".\{0,1\}\(.\{0,$(( $(echo "${arg}" | wc --chars) - 2 ))\}\)")"
         fi
         completed_path="${completed_path}${arg}"
@@ -101,7 +101,7 @@ _EOF_
     return 0
 }
 
-# are we executing the script (rather than sourcing it)?
+# Are we executing the script (rather than sourcing it)?
 # Inspired by: https://superuser.com/questions/731425/bash-detect-execute-vs-source-in-a-script
 # shellcheck disable=2116
 if [ "$(basename "$0")" = "pathjoin" ]; then
