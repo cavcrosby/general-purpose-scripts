@@ -11,7 +11,7 @@ python_scripts_dir = ${CURDIR}/python
 shell_scripts_dir = ${CURDIR}/shell
 
 # gnu install directory variables
-override prefix = ${HOME}/.local
+prefix = ${HOME}/.local
 exec_prefix = ${prefix}
 # where to add link names that point to repo scripts
 bin_dir = ${exec_prefix}/bin
@@ -28,9 +28,9 @@ help:
 >	@echo '  install        - links each script in this repo from a local'
 >	@echo '                   user accessible location (at least by default).'
 >	@echo '  uninstall      - removes links that were inserted by the install target.'
->	@echo 'make configurations (e.g. make [config]=1 [targets]):'
->	@echo '  prefix         - determines what default bin dir is used to'
->	@echo '                   install links (default is "${prefix}").'
+>	@echo 'Public make configurations (e.g. make [config]=1 [targets]):'
+>	@echo '  bin_dir        - determines the where links are installed/uninstalled'
+>	@echo '                   from (default is "${bin_dir}").'
 
 # NOTES: .ONESHELL is needed to ensure all the commands below run in
 # one shell session. DO NOT quote the *_scripts variables! This seems
