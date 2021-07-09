@@ -1,7 +1,7 @@
 #!/bin/bash
 #
-# Small script that decapitalizes every file
-# starting at the PWD.
+# Deletes non-bare git repo(s) from the filesystem and then grabs another copy
+# each from its 'origin' location.
 
 set -e
 
@@ -27,34 +27,43 @@ while true; do
     esac
 done
 
-# for reference on why just '...|| $help_option' is a bad idea:
+# for reference on why just '...|| ${help_option}' is a bad idea:
 # https://stackoverflow.com/questions/2953646/how-can-i-declare-and-use-boolean-variables-in-a-shell-script#answer-21210966
-if [ "${help_option}" = true ]; then
+if [ $# -eq 0 ] || [ "${help_option}" = true ]; then
         cat << _EOF_
-Usage: ${PROGRAM_NAME} [-${HELP_SHORT_OPT}]
+Usage: ${PROGRAM_NAME} [-${HELP_SHORT_OPT}] [GIT_REPO_DIR...]
 
-Recursively decapitalizes each file starting in the present working
-directory (PWD).
+Deletes non-bare git repo(s) from the filesystem and then grabs another copy
+each from its 'origin' location.
 
 Options:
     -${HELP_SHORT_OPT}, --${HELP_LONG_OPT}      show this help message and exit
 
 _EOF_
+    if [ $# -eq 0 ]; then
+        exit 1
+    fi
     exit 0
 fi
 
-files="$(find "${PWD}" -iname '*[[:upper:]]*')"
-old_ifs="${IFS}"
-IFS=$'\n'
+if [ -z "$(command -v git)" ]; then
+	echo "${PROGRAM_NAME}: git cannot be found in the PATH!"
+	exit 1
+fi
 
-# f ==> file
-for f in ${files}; do 
-    lower_f="$(echo "${f}" | tr '[:upper:]' '[:lower:]')";
-    cd "$(dirname "${f}")" || exit
-    mv "$(basename "${f}")" "$(basename "${lower_f}")";
-    cd - > /dev/null || exit
+while [ $# -gt 0 ]; do
+    git_repo_dir="$1"
+    cd "${git_repo_dir}"
+    if ! git rev-parse --quiet --is-inside-work-tree > /dev/null 2>&1; then
+        echo -e "${PROGRAM_NAME}: ${git_repo_dir} is not a git repo!"
+        cd - > /dev/null
+        exit
+    fi
+    git_repo_url="$(git config --local remote.origin.url)"
+    cd - > /dev/null
+    rm --recursive --force "${git_repo_dir}"
+    git clone --quiet "${git_repo_url}" "$(basename "${git_repo_dir}")"
+    shift
 done
-
-IFS="${old_ifs}"
 
 exit 0
