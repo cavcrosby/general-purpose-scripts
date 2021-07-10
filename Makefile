@@ -42,28 +42,24 @@ help:
 install:
 	# shell function used to create link(s) to script(s)
 >	@lnsf() { script_name="$$(basename "$$1")"; ln --symbolic --force "$$1" "${bin_dir}/$${script_name}"; }
-	# pscript ==> python script
->	for pscript in ${python_scripts}; do \
->		echo lnsf $${pscript}; \
->		lnsf $${pscript}; \
+>	for pyscript in ${python_scripts}; do \
+>		echo lnsf $${pyscript}; \
+>		lnsf $${pyscript}; \
 >	done
-	# sscript ==> shell script
->	for sscript in ${shell_scripts}; do \
->		echo lnsf $${sscript}; \
->		lnsf $${sscript}; \
+>	for shscript in ${shell_scripts}; do \
+>		echo lnsf $${shscript}; \
+>		lnsf $${shscript}; \
 >	done
 
 .PHONY: uninstall
 uninstall:
 	# shell function used to remove link(s) to script(s)
 >	@rmf() { script_name="$$(basename "$$1")"; rm --force "${bin_dir}/$${script_name}"; }
-	# pscript ==> python script
->	for pscript in ${python_scripts}; do \
->		echo rmf $${pscript}; \
->		rmf $${pscript}; \
+>	for pyscript in ${python_scripts}; do \
+>		echo rmf $${pyscript}; \
+>		rmf $${pyscript}; \
 >	done
-	# sscript ==> shell script
->	for sscript in ${shell_scripts}; do \
->		echo rmf $${sscript}; \
->		rmf $${sscript}; \
+>	for shscript in ${shell_scripts}; do \
+>		echo rmf $${shscript}; \
+>		rmf $${shscript}; \
 >	done

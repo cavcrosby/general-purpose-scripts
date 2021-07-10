@@ -4,7 +4,7 @@
 
 set -e
 
-# constants and defined cli parameters, opt ==> option
+# constants and defined cli parameters
 PROGRAM_NAME="$(basename "$0")"
 readonly PROGRAM_NAME
 readonly FALSE=0
@@ -24,8 +24,7 @@ help_option="${FALSE}"
 # do not combine long opts into their own variable
 eval set -- "$(getopt --options "${short_opts}" --long "${HELP_LONG_OPT}" --name "${PROGRAM_NAME}" -- "$@")"
 
-# determine behavior of program from cli arguments,
-# cli ==> command line interface
+# determine behavior of program from cli arguments
 while true; do
     case "$1" in
         "-${HELP_SHORT_OPT}" | "--${HELP_LONG_OPT}")    help_option="${TRUE}"; shift ;;

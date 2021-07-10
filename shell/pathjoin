@@ -18,7 +18,7 @@
 #   - 1: 0 arguments were passed to the command
 #######################################
 pathjoin() {
-    # constants and defined cli parameters, opt ==> option
+    # constants and defined cli parameters
     readonly PROGRAM_NAME="pathjoin"
     readonly FALSE=0
     readonly TRUE=1
@@ -67,7 +67,6 @@ _EOF_
 
     completed_path="${path_prefix}"
     while [ $# -gt 0 ]; do
-        # arg ==> argument
         arg="$1"
         # Subtract 2 is needed to deal with newline from echo, sh doesn't understand
         # flags to echo...apparently, and to deal with getting right end index.
