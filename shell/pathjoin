@@ -20,6 +20,8 @@
 pathjoin() {
     # constants and defined cli parameters, opt ==> option
     readonly PROGRAM_NAME="pathjoin"
+    readonly FALSE=0
+    readonly TRUE=1
     readonly HELP_SHORT_OPT="h"
     readonly HELP_LONG_OPT="help"
     readonly RELATIVE_PATH_SHORT_OPT="r"
@@ -29,21 +31,21 @@ pathjoin() {
 "${RELATIVE_PATH_SHORT_OPT}"
 
     path_prefix="/"
-    help_option=false
+    help_option="${FALSE}"
     # do not combine long opts into their own variable
     eval set -- "$(getopt --options "${short_opts}" --long "${HELP_LONG_OPT}","${RELATIVE_PATH_LONG_OPT}" --name "${PROGRAM_NAME}" -- "$@")"
     while true; do
         case "$1" in
-            "-${HELP_SHORT_OPT}" | "--${HELP_LONG_OPT}")                        help_option=true; shift ;;
+            "-${HELP_SHORT_OPT}" | "--${HELP_LONG_OPT}")                        help_option="${TRUE}"; shift ;;
             "-${RELATIVE_PATH_SHORT_OPT}" | "--${RELATIVE_PATH_LONG_OPT}")      path_prefix="./"; shift ;;
             "--")                                                               shift; break ;;
             *)                                                                  break ;;
         esac
     done
 
-    # for reference on why just '...|| ${help_option}' is a bad idea:
-    # https://stackoverflow.com/questions/2953646/how-can-i-declare-and-use-boolean-variables-in-a-shell-script#answer-21210966
-    if [ $# -eq 0 ] || [ "${help_option}" = true ]; then
+    # for reference why ((...)) was not used:
+    # https://github.com/koalaman/shellcheck/wiki/SC3006
+    if [ $# -eq 0 ] || [ "${help_option}" -gt 0 ]; then
         cat << _EOF_
 Usage: ${PROGRAM_NAME} [-${HELP_SHORT_OPT}] [-${RELATIVE_PATH_SHORT_OPT}] [PATH...]
 
