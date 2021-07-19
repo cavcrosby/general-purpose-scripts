@@ -4,14 +4,15 @@
 
 # recursive variables
 SHELL = /usr/bin/sh
-python_scripts_dir = ${CURDIR}/python
-shell_scripts_dir = ${CURDIR}/shell
+python_scripts_dir_path = ${CURDIR}/python
+shell_scripts_dir_path = ${CURDIR}/shell
 
 # executables
 POETRY = poetry
 PIP = pip
 PYENV = pyenv
 PYTHON = python
+GENCONFIGS = genconfigs.py
 executables = \
 	${POETRY}\
 	${PIP}\
@@ -41,8 +42,8 @@ VIRTUALENV_PYTHON_VERSION =
 
 # simply expanded variables
 # f ==> file
-python_scripts := $(shell find ${python_scripts_dir} -type f)
-shell_scripts := $(shell find ${shell_scripts_dir} -type f)
+python_scripts := $(shell find ${python_scripts_dir_path} -type f)
+shell_scripts := $(shell find ${shell_scripts_dir_path} -type f)
 virtenv_name := $(shell basename ${CURDIR})
 
 # inspired from:
@@ -122,6 +123,11 @@ ${PYTHON_INSTALL}:
 >
 >		chmod 755 "${bin_dir}/$${pyscript}"
 >	done
+>
+	# just so its clear that genconfigs is a python script
+>	echo ${PYTHON} "${python_scripts_dir_path}/${GENCONFIGS}"
+>	${PYTHON} "${python_scripts_dir_path}/${GENCONFIGS}"
+>
 
 .PHONY: ${SHELL_INSTALL}
 ${SHELL_INSTALL}:
