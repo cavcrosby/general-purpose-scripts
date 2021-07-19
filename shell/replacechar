@@ -30,7 +30,7 @@ done
 
 if (( help_option )); then
         cat << _EOF_
-Usage: ${PROGRAM_NAME} [-${HELP_SHORT_OPT}] [FROM_CHAR] [TO_CHAR]
+Usage: ${PROGRAM_NAME} [-${HELP_SHORT_OPT}] FROM_CHAR TO_CHAR
 
 Recursively replaces a character in each file starting in the present working
 directory (PWD) with another character.

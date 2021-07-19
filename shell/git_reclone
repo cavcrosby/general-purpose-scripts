@@ -30,7 +30,7 @@ done
 
 if [ $# -eq 0 ] || (( help_option )); then
         cat << _EOF_
-Usage: ${PROGRAM_NAME} [-${HELP_SHORT_OPT}] [GIT_REPO_DIR...]
+Usage: ${PROGRAM_NAME} [-${HELP_SHORT_OPT}] GIT_REPO_DIR...
 
 Deletes non-bare git repo(s) from the filesystem and then grabs another copy
 each from its 'origin' location.

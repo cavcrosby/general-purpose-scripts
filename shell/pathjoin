@@ -47,7 +47,7 @@ pathjoin() {
     # https://github.com/koalaman/shellcheck/wiki/SC3006
     if [ $# -eq 0 ] || [ "${help_option}" -gt 0 ]; then
         cat << _EOF_
-Usage: ${PROGRAM_NAME} [-${HELP_SHORT_OPT}] [-${RELATIVE_PATH_SHORT_OPT}] [PATH...]
+Usage: ${PROGRAM_NAME} [-${HELP_SHORT_OPT}] [-${RELATIVE_PATH_SHORT_OPT}] PATH...
 
 Takes one or more filesystem paths and conjoins them. Duplicate
 forward slashes (e.g. $PROGRAM_NAME foo/ /bar, /foo/bar would be 
