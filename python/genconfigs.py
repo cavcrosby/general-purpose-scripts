@@ -116,7 +116,7 @@ class GenConfigs:
 
     @classmethod
     def _get_parent_program_name(cls, fil):
-        """Determines the parent program's name.
+        """Determine the parent program's name.
 
         Parameters
         ----------
@@ -130,7 +130,6 @@ class GenConfigs:
             File/program name that is the parent.
 
         """
-
         mappings = {"python": 1, "python3": 1}
 
         if fil != cls._EXPORT_OPTION_DEFAULT_VALUE:
@@ -157,7 +156,7 @@ class GenConfigs:
 
     @classmethod
     def retrieve_cmd_args(cls):
-        """How arguments are retrieved from the command line.
+        """Retrieve command arguments from the command line.
 
         Returns
         -------
@@ -198,7 +197,7 @@ class GenConfigs:
             sys.exit(1)
 
     def _flatten_genconfigs_configs(self, script_name):
-        """Minimizes the depth of the configuration datastructure loaded.
+        """Minimize the depth of the configuration datastructure loaded.
 
         Script configurations are added to the root node. Which may at most
         have two child nodes. From there, the script configurations tree
@@ -211,7 +210,6 @@ class GenConfigs:
             root of the configuration datastructure.
 
         """
-
         # LBYL ok, as currently I except most scripts will just use common
         # configurations, with few using the common configuration prefix.
         script_configs = (
@@ -222,10 +220,10 @@ class GenConfigs:
         for config in script_configs:
             if (
                 self.COMMON_CONFIGURATION_PREFIX in config
-                and config[
+                and config[  # noqa: W503
                     len(
                         self.COMMON_CONFIGURATION_PREFIX
-                    ) :  # noqa: E203, black adds padding for complex expressions https://github.com/psf/black/issues/446
+                    ) :  # noqa: E203,E501 black adds padding for complex slice expressions https://github.com/psf/black/issues/446
                 ]
                 in self.json
             ):
@@ -237,7 +235,7 @@ class GenConfigs:
         del self.json[self._SCRIPT_CONFIGS_KEY]
 
     def _load_configs(self):
-        """Used to load the instance with the program configuration file.
+        """Load the instance with the program configuration file.
 
         Returns
         -------
@@ -253,7 +251,7 @@ class GenConfigs:
             return False
 
     def main(self, cmd_args):
-        """The main of the program."""
+        """Start the main program execution ."""
         try:
             if cmd_args[self._SHOW_PATH_LONG_OPTION]:
                 print(self.GPS_CONFIG_FILE_PATH)
