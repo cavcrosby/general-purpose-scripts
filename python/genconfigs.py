@@ -148,7 +148,7 @@ class GenConfigs:
             return fil
         else:
             # Grandparent's pid is needed because of the shims that are
-            # actually called prior to the actual script.
+            # called prior to the actual script.
             completed_process = subprocess.run(
                 [
                     "ps",

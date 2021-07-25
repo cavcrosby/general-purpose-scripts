@@ -26,22 +26,10 @@ _arg_parser = argparse.ArgumentParser(
     ),
     allow_abbrev=False,
 )
-_configs = json.loads(
-    subprocess.run(
-        ["genconfigs.py", "--export"],
-        capture_output=True,
-        encoding="utf-8",
-        check=True,
-    ).stdout.strip()
-)
 
 WORKFLOW_ID_PLACEHOLDER = "_WORKFLOW_ID"
 REPO_PLACEHOLDER = "_REPO"
 PAYLOAD = {"type": "all"}
-_API_TOKEN = _configs[keys.GITHUB_API_TOKEN_KEY]
-_OWNER = _configs[keys.OWNER_KEY]
-_WORKFLOWS_URL = f"https://api.github.com/repos/{_OWNER}/{REPO_PLACEHOLDER}/actions/workflows"
-_WORKFLOWS_DISABLE_URL = f"https://api.github.com/repos/{_OWNER}/{REPO_PLACEHOLDER}/actions/workflows/{WORKFLOW_ID_PLACEHOLDER}/disable"
 
 # positional and option arg labels
 # used at the command line and to reference values of arguments
@@ -79,10 +67,21 @@ def _retrieve_cmd_args():
 
 def main(args):
     """Start the main program execution."""
-    auth = pylib.githubauth.GitHubAuth(_API_TOKEN)
+    configs = json.loads(
+        subprocess.run(
+            ["genconfigs.py", "--export"],
+            capture_output=True,
+            encoding="utf-8",
+            check=True,
+        ).stdout.strip()
+    )
+    owner = configs[keys.OWNER_KEY]
+    workflows_url = f"https://api.github.com/repos/{owner}/{REPO_PLACEHOLDER}/actions/workflows"
+    workflows_disable_url = f"https://api.github.com/repos/{owner}/{REPO_PLACEHOLDER}/actions/workflows/{WORKFLOW_ID_PLACEHOLDER}/disable"
+    auth = pylib.githubauth.GitHubAuth(configs[keys.GITHUB_API_TOKEN_KEY])
     repos_to_workflows = {
         repo: requests.get(
-            _WORKFLOWS_URL.replace(REPO_PLACEHOLDER, repo),
+            workflows_url.replace(REPO_PLACEHOLDER, repo),
             auth=auth,
             params=PAYLOAD,
         ).json()
@@ -92,7 +91,7 @@ def main(args):
         if workflows["total_count"] > 0:
             for workflow in workflows["workflows"]:
                 github_repo_workflows_disable_url = (
-                    _WORKFLOWS_DISABLE_URL.replace(
+                    workflows_disable_url.replace(
                         WORKFLOW_ID_PLACEHOLDER,
                         str(workflow["id"]),
                     ).replace(REPO_PLACEHOLDER, repo)

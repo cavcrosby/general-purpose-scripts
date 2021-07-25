@@ -25,18 +25,9 @@ _arg_parser = argparse.ArgumentParser(
     ),
     allow_abbrev=False,
 )
-_configs = json.loads(
-    subprocess.run(
-        ["genconfigs.py", "--export"],
-        capture_output=True,
-        encoding="utf-8",
-        check=True,
-    ).stdout.strip()
-)
 
 PAYLOAD = {"type": "all"}
 GITHUB_API_URL = "https://api.github.com/user/repos"
-_API_TOKEN = _configs[keys.GITHUB_API_TOKEN_KEY]
 
 
 def _retrieve_cmd_args():
@@ -62,10 +53,18 @@ def _retrieve_cmd_args():
 
 def main(args):
     """Start the main program execution."""
-    auth = pylib.githubauth.GitHubAuth(_API_TOKEN)
+    configs = json.loads(
+        subprocess.run(
+            ["genconfigs.py", "--export"],
+            capture_output=True,
+            encoding="utf-8",
+            check=True,
+        ).stdout.strip()
+    )
+    auth = pylib.githubauth.GitHubAuth(configs[keys.GITHUB_API_TOKEN_KEY])
     repos = requests.get(GITHUB_API_URL, auth=auth, params=PAYLOAD)
     repo_names_to_urls = {
-        repo["name"]: repo["svn_url"] for repo in repos.json()
+        repo["name"]: repo["html_url"] for repo in repos.json()
     }
     for repo_name in repo_names_to_urls:
         subprocess.run(
