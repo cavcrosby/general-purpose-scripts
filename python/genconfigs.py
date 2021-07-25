@@ -67,9 +67,11 @@ class GenConfigs:
     _SCRIPT_CONFIGS_KEY = "script_configs_keys"
     _WEBHOSTED_GIT_ACCOUNT_URL_KEY = "webhosted_git_account_url"
     _FORKED_REPOS_TO_UPSTREAM_URLS_KEY = "forked_repos_to_upstream_urls"
+    _OWNER_KEY = "owner"
 
     # scripts
 
+    _DISABLE_GITHUB_ACTIONS = "disable_github_actions.py"
     _UPDATE_REMOTE_FORKS = "update_remote_forks.py"
 
     # positional/optional argument labels
@@ -107,12 +109,22 @@ class GenConfigs:
                     "awesome-python": "https://github.com/vinta/awesome-python"
                 },
             },
+            _DISABLE_GITHUB_ACTIONS: {_OWNER_KEY: ""},
         },
     }
 
     def __init__(self):
 
         self.json = None
+
+    @classmethod
+    def _get_grandparents_pid(cls):
+
+        return subprocess.run(
+            ["ps", "--pid", str(os.getppid()), "-o", "ppid", "--no-headers"],
+            capture_output=True,
+            encoding="utf-8",
+        ).stdout.strip()
 
     @classmethod
     def _get_parent_program_name(cls, fil):
@@ -135,11 +147,13 @@ class GenConfigs:
         if fil != cls._EXPORT_OPTION_DEFAULT_VALUE:
             return fil
         else:
+            # Grandparent's pid is needed because of the shims that are
+            # actually called prior to the actual script.
             completed_process = subprocess.run(
                 [
                     "ps",
                     "--pid",
-                    str(os.getppid()),
+                    str(cls._get_grandparents_pid()),
                     "-o",
                     "command",
                     "--no-headers",
@@ -250,16 +264,16 @@ class GenConfigs:
         except FileNotFoundError:
             return False
 
-    def main(self, cmd_args):
-        """Start the main program execution ."""
+    def main(self, args):
+        """Start the main program execution."""
         try:
-            if cmd_args[self._SHOW_PATH_LONG_OPTION]:
+            if args[self._SHOW_PATH_LONG_OPTION]:
                 print(self.GPS_CONFIG_FILE_PATH)
-            elif cmd_args[self._EXPORT_LONG_OPTION]:
+            elif args[self._EXPORT_LONG_OPTION]:
                 if not self._load_configs():
                     raise FileNotFoundError(1, "_", self.GPS_CONFIG_FILE_PATH)
                 script_name = self._get_parent_program_name(
-                    cmd_args[self._EXPORT_LONG_OPTION]
+                    args[self._EXPORT_LONG_OPTION]
                 )
                 self._flatten_genconfigs_configs(script_name)
                 print(json.dumps(self.json, indent=4))

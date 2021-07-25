@@ -1,55 +1,79 @@
 #!/usr/bin/env python3
+"""Clones all GitHub repos to the local machine."""
 # Standard Library Imports
+import argparse
+import json
+import os
 import subprocess
+import sys
 
 # Third Party Imports
 import requests
 
 # Local Application Imports
+import keys
+import pylib
 
+# constants and other program configurations
+_PROGRAM_NAME = os.path.basename(os.path.abspath(__file__))
+_PROGRAM_ROOT = os.getcwd()
+_DESC = __doc__
+_arg_parser = argparse.ArgumentParser(
+    description=_DESC,
+    formatter_class=lambda prog: pylib.argparse.CustomHelpFormatter(
+        prog, max_help_position=35
+    ),
+    allow_abbrev=False,
+)
+_configs = json.loads(
+    subprocess.run(
+        ["genconfigs.py", "--export"],
+        capture_output=True,
+        encoding="utf-8",
+        check=True,
+    ).stdout.strip()
+)
 
-# you can ignore this class, API_TOKEN is used for authentication
-class GitHubAuth(requests.auth.AuthBase):
-    """Custom HTTPBasicAuth for GitHub.
-
-    GitHub does not require a username
-    and password to use their API. Instead
-    an API token is used.
-
-    Parameters
-    ----------
-    API_TOKEN : str
-        Assigned when an instance is created.
-
-    """
-
-    def __init__(self, API_TOKEN):
-
-        self.API_TOKEN = API_TOKEN
-
-    def __call__(self, requests_obj):
-
-        requests_obj.headers["Authorization"] = self.auth_header_value()
-        return requests_obj
-
-    def auth_header_value(self):
-        """Part of OAuth2 authentication.
-        
-        See the following link:
-        https://developer.github.com/v3/#oauth2-token-sent-in-a-header
-
-        """
-        return f"token {self.API_TOKEN}"
-
-
-API_TOKEN = ""
 PAYLOAD = {"type": "all"}
 GITHUB_API_URL = "https://api.github.com/user/repos"
+_API_TOKEN = _configs[keys.GITHUB_API_TOKEN_KEY]
 
-auth = GitHubAuth(API_TOKEN)
 
-repos = requests.get(GITHUB_API_URL, auth=auth, params=PAYLOAD)
-repo_names_to_urls = {repo["name"]: repo["svn_url"] for repo in repos.json()}
+def _retrieve_cmd_args():
+    """Retrieve command arguments from the command line.
 
-for repo_name in repo_names_to_urls:
-    subprocess.run(["git", "clone", repo_names_to_urls[repo_name], repo_name])
+    Returns
+    -------
+    Namespace
+        An object that holds attributes pulled from the command line.
+
+    Raises
+    ------
+    SystemExit
+        If user input is not considered valid when parsing arguments.
+
+    """
+    try:
+        args = vars(_arg_parser.parse_args())
+        return args
+    except SystemExit:
+        sys.exit(1)
+
+
+def main(args):
+    """Start the main program execution."""
+    auth = pylib.githubauth.GitHubAuth(_API_TOKEN)
+    repos = requests.get(GITHUB_API_URL, auth=auth, params=PAYLOAD)
+    repo_names_to_urls = {
+        repo["name"]: repo["svn_url"] for repo in repos.json()
+    }
+    for repo_name in repo_names_to_urls:
+        subprocess.run(
+            ["git", "clone", repo_names_to_urls[repo_name], repo_name]
+        )
+
+
+if __name__ == "__main__":
+    args = _retrieve_cmd_args()
+    main(args)
+    sys.exit(0)

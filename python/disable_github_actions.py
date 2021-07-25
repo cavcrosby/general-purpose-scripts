@@ -1,75 +1,106 @@
 #!/usr/bin/env python3
+"""Disables all workflows associated with GitHub repos' actions."""
 # Standard Library Imports
+import argparse
+import json
+import os
+import subprocess
 import sys
 
 # Third Party Imports
 import requests
 
 # Local Application Imports
+import keys
+import pylib
 
 
-# you can ignore this class, API_TOKEN is used for authentication
-class GitHubAuth(requests.auth.AuthBase):
-    """Custom HTTPBasicAuth for GitHub.
+# constants and other program configurations
+_PROGRAM_NAME = os.path.basename(os.path.abspath(__file__))
+_PROGRAM_ROOT = os.getcwd()
+_DESC = __doc__
+_arg_parser = argparse.ArgumentParser(
+    description=_DESC,
+    formatter_class=lambda prog: pylib.argparse.CustomHelpFormatter(
+        prog, max_help_position=35
+    ),
+    allow_abbrev=False,
+)
+_configs = json.loads(
+    subprocess.run(
+        ["genconfigs.py", "--export"],
+        capture_output=True,
+        encoding="utf-8",
+        check=True,
+    ).stdout.strip()
+)
 
-    GitHub does not require a username
-    and password to use their API. Instead
-    an API token is used.
+WORKFLOW_ID_PLACEHOLDER = "_WORKFLOW_ID"
+REPO_PLACEHOLDER = "_REPO"
+PAYLOAD = {"type": "all"}
+_API_TOKEN = _configs[keys.GITHUB_API_TOKEN_KEY]
+_OWNER = _configs[keys.OWNER_KEY]
+_WORKFLOWS_URL = f"https://api.github.com/repos/{_OWNER}/{REPO_PLACEHOLDER}/actions/workflows"
+_WORKFLOWS_DISABLE_URL = f"https://api.github.com/repos/{_OWNER}/{REPO_PLACEHOLDER}/actions/workflows/{WORKFLOW_ID_PLACEHOLDER}/disable"
 
-    Parameters
-    ----------
-    API_TOKEN : str
-        Assigned when an instance is created.
+# positional and option arg labels
+# used at the command line and to reference values of arguments
+
+REPO_NAME_POSITIONAL_ARG = "repo_name"
+
+
+def _retrieve_cmd_args():
+    """Retrieve command arguments from the command line.
+
+    Returns
+    -------
+    Namespace
+        An object that holds attributes pulled from the command line.
+
+    Raises
+    ------
+    SystemExit
+        If user input is not considered valid when parsing arguments.
 
     """
-
-    def __init__(self, API_TOKEN):
-
-        self.API_TOKEN = API_TOKEN
-
-    def __call__(self, requests_obj):
-
-        requests_obj.headers["Authorization"] = self.auth_header_value()
-        return requests_obj
-
-    def auth_header_value(self):
-        """Part of OAuth2 authentication.
-        
-        See the following link:
-        https://developer.github.com/v3/#oauth2-token-sent-in-a-header
-
-        """
-        return f"token {self.API_TOKEN}"
-
-
-# this will be the git repo whose
-# github actions will be deleted from
-try:
-    REPO = sys.argv[1]
-except IndexError:
-    # TODO(cavcrosby): Usage strings and Program names
-    # are not consistent across scripts this may also apply to other repos
-    print(f"Usage: {sys.argv[0]} GIT_REPO_NAME")
-    sys.exit(1)
-OWNER = ""
-API_TOKEN = ""
-WORKFLOW_ID_PLACEHOLDER = "WORKFLOW_ID"
-PAYLOAD = {"type": "all"}
-GITHUB_REPO_WORKFLOWS_URL = (
-    f"https://api.github.com/repos/{OWNER}/{REPO}/actions/workflows"
-)
-GITHUB_REPO_WORKFLOWS_URL_BASE = f"https://api.github.com/repos/{OWNER}/{REPO}/actions/workflows/{WORKFLOW_ID_PLACEHOLDER}/disable"
-
-auth = GitHubAuth(API_TOKEN)
-
-workflows = requests.get(
-    GITHUB_REPO_WORKFLOWS_URL, auth=auth, params=PAYLOAD
-).json()
-
-if workflows["total_count"] > 0:
-    for workflow in workflows["workflows"]:
-        github_repo_workflows_disable_url = GITHUB_REPO_WORKFLOWS_URL_BASE.replace(
-            WORKFLOW_ID_PLACEHOLDER, str(workflow["id"])
+    try:
+        _arg_parser.add_argument(
+            f"{REPO_NAME_POSITIONAL_ARG}",
+            action="append",
+            help="represents the github repo name",
+            metavar=REPO_NAME_POSITIONAL_ARG.upper(),
         )
-        requests.put(github_repo_workflows_disable_url, auth=auth)
-sys.exit(0)
+
+        args = vars(_arg_parser.parse_args())
+        return args
+    except SystemExit:
+        sys.exit(1)
+
+
+def main(args):
+    """Start the main program execution."""
+    auth = pylib.githubauth.GitHubAuth(_API_TOKEN)
+    repos_to_workflows = {
+        repo: requests.get(
+            _WORKFLOWS_URL.replace(REPO_PLACEHOLDER, repo),
+            auth=auth,
+            params=PAYLOAD,
+        ).json()
+        for repo in args[REPO_NAME_POSITIONAL_ARG]
+    }
+    for repo, workflows in repos_to_workflows.items():
+        if workflows["total_count"] > 0:
+            for workflow in workflows["workflows"]:
+                github_repo_workflows_disable_url = (
+                    _WORKFLOWS_DISABLE_URL.replace(
+                        WORKFLOW_ID_PLACEHOLDER,
+                        str(workflow["id"]),
+                    ).replace(REPO_PLACEHOLDER, repo)
+                )
+                requests.put(github_repo_workflows_disable_url, auth=auth)
+
+
+if __name__ == "__main__":
+    args = _retrieve_cmd_args()
+    main(args)
+    sys.exit(0)
