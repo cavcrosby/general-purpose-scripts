@@ -83,11 +83,11 @@ def main(args):
     os.chdir(_TEMP_DIR)
     if args[VERBOSE_LONG_OPTION]:
         git_clone_cmd = ("git", "clone", "--verbose")
-        git_branch_cmd = ("git", "branch", "--verbose")
+        git_branch_cmd = ("git", "branch", "--verbose", "--track")
         git_push_cmd = ("git", "push", "--verbose")
     else:
         git_clone_cmd = ("git", "clone", "--quiet")
-        git_branch_cmd = ("git", "branch", "--quiet")
+        git_branch_cmd = ("git", "branch", "--quiet", "--track")
         git_push_cmd = ("git", "push", "--quiet")
 
     for forked_repo, upstream_url in forked_repo_to_upstream_urls.items():
@@ -102,22 +102,16 @@ def main(args):
         # sequence of commands inspired from:
         # https://stackoverflow.com/questions/15779740/how-to-update-my-fork-to-have-the-same-branches-and-tags-as-the-original-reposit
         # https://stackoverflow.com/questions/379081/track-all-remote-git-branches-as-local-branches/6300386#answer-27234826
-        subprocess.run(
-            [
-                "git",
-                "remote",
-                "add",
-                REMOTE_NAME,
-                os.path.join(webhosted_git_account_url, forked_repo),
-            ],
-            encoding="utf-8",
-            check=True,
+        upstream_repo = git.Repo(os.getcwd())
+        upstream_repo.create_remote(
+            name=REMOTE_NAME,
+            url=os.path.join(webhosted_git_account_url, forked_repo),
         )
-        for short_refname in git.Repo(os.getcwd()).remote().refs:
+        for short_refname in upstream_repo.remote().refs:
             try:
                 _ = subprocess.run(
                     git_branch_cmd
-                    + ("--track", short_refname.remote_head, short_refname.name),
+                    + (short_refname.remote_head, short_refname.name),
                     capture_output=True,
                     encoding="utf-8",
                     check=True,
