@@ -18,8 +18,6 @@ import keys
 import pylib
 
 # constants and other program configurations
-_PROGRAM_NAME = os.path.basename(os.path.abspath(__file__))
-_PROGRAM_ROOT = os.getcwd()
 _TEMP_DIR = os.path.basename(f"{os.path.abspath(__file__)}-temp")
 _DESC = __doc__
 _arg_parser = argparse.ArgumentParser(
@@ -122,7 +120,7 @@ def _arg_license_conv(license):
     return mappings[license]
 
 
-def _retrieve_cmd_args():
+def retrieve_cmd_args():
     """Retrieve command arguments from the command line.
 
     Returns
@@ -217,6 +215,6 @@ def main(args):
 
 
 if __name__ == "__main__":
-    args = _retrieve_cmd_args()
+    args = retrieve_cmd_args()
     main(args)
     sys.exit(0)

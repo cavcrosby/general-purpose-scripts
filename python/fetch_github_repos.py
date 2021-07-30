@@ -3,7 +3,6 @@
 # Standard Library Imports
 import argparse
 import json
-import os
 import subprocess
 import sys
 
@@ -15,8 +14,6 @@ import keys
 import pylib
 
 # constants and other program configurations
-_PROGRAM_NAME = os.path.basename(os.path.abspath(__file__))
-_PROGRAM_ROOT = os.getcwd()
 _DESC = __doc__
 _arg_parser = argparse.ArgumentParser(
     description=_DESC,
@@ -30,7 +27,7 @@ PAYLOAD = {"type": "all"}
 GITHUB_API_URL = "https://api.github.com/user/repos"
 
 
-def _retrieve_cmd_args():
+def retrieve_cmd_args():
     """Retrieve command arguments from the command line.
 
     Returns
@@ -73,6 +70,6 @@ def main(args):
 
 
 if __name__ == "__main__":
-    args = _retrieve_cmd_args()
+    args = retrieve_cmd_args()
     main(args)
     sys.exit(0)
