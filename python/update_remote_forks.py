@@ -17,9 +17,8 @@ import pylib
 
 # constants and other program configurations
 _TEMP_DIR = os.path.basename(f"{os.path.abspath(__file__)}-temp")
-_DESC = __doc__
 _arg_parser = argparse.ArgumentParser(
-    description=_DESC,
+    description=__doc__,
     formatter_class=lambda prog: pylib.argparse.CustomHelpFormatter(
         prog, max_help_position=35
     ),
