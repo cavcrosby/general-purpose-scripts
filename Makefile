@@ -14,7 +14,6 @@ PYENV = pyenv
 PYTHON = python
 GENCONFIGS = genconfigs.py
 executables = \
-	${POETRY}\
 	${PIP}\
 	${PYENV}\
 	${PYTHON}
@@ -78,9 +77,6 @@ ${SETUP}: ${PYTHON_SETUP}
 .PHONY: ${PYTHON_SETUP}
 ${PYTHON_SETUP}:
 >	@[ -n "${VIRTUALENV_PYTHON_VERSION}" ] || { echo "VIRTUALENV_PYTHON_VERSION was not passed into make"; exit 1; }
-	# Needed to make sure poetry doesn't panic and create a virtualenv, redirecting
-	# dependencies into the wrong virtualenv.
->	${POETRY} config virtualenvs.create false
 	# assumes that the VIRTUALENV_PYTHON_VERSION is already installed by pyenv
 >	${PYENV} virtualenv "${VIRTUALENV_PYTHON_VERSION}" "${virtenv_name}"
 	# mainly used to enter the virtualenv when in the repo
@@ -88,11 +84,11 @@ ${PYTHON_SETUP}:
 >	export PYENV_VERSION="${virtenv_name}"
 	# to ensure the most current versions of dependencies can be installed
 >	${PYTHON} -m ${PIP} install --upgrade ${PIP}
-	# TODO: monitor ticket, appears the newer installation method for poetry only installs poetry for the current virtualenv. This seems to bust any attempt to using pyenv virtualenvs, reference:
-	# https://github.com/python-poetry/poetry/issues/651
->	${POETRY} env use "$$(${PYENV} which python)"
-	# --no-root because we only want to install dependencies
->	${POETRY} install --no-root || { echo "${POETRY} failed to install project dependencies"; exit 1; }
+>	${PYTHON} -m ${PIP} install ${POETRY}
+	# --no-root because we only want to install dependencies. 'pyenv exec' is needed
+	# as poetry is installed into a virtualenv bin dir that is not added to the
+	# current shell PATH.
+>	${PYENV} exec ${POETRY} install --no-root || { echo "${POETRY} failed to install project dependencies"; exit 1; }
 >	unset PYENV_VERSION
 
 # .ONESHELL is needed to ensure all the commands below run in one shell session.

@@ -7,7 +7,7 @@ license = "MIT"
 
 [tool.poetry.dependencies]
 python = "^3.8"
-pylib-cavcrosby = { git = "https://github.com/cavcrosby/pylib", branch = "main"}
+pylib-cavcrosby = {git = "https://github.com/cavcrosby/pylib.git", branch = "main"}
 requests = "^2.25.1"
 
 [tool.poetry.dev-dependencies]
