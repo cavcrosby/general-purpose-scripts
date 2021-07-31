@@ -42,7 +42,7 @@ VIRTUALENV_PYTHON_VERSION =
 
 # simply expanded variables
 # f ==> file
-python_scripts := $(shell find ${python_scripts_dir_path} -type f)
+python_scripts := $(shell find ${python_scripts_dir_path} -type f -and -not -iname *.pyc -and -not -iname keys.py)
 shell_scripts := $(shell find ${shell_scripts_dir_path} -type f)
 virtenv_name := $(shell basename ${CURDIR})
 
@@ -127,7 +127,8 @@ ${PYTHON_INSTALL}:
 	# just so its clear that genconfigs is a python script
 >	echo ${PYTHON} "${python_scripts_dir_path}/${GENCONFIGS}"
 >	${PYTHON} "${python_scripts_dir_path}/${GENCONFIGS}"
->
+>	echo chmod 600 "$$(${PYTHON} "${python_scripts_dir_path}/${GENCONFIGS}" --show-path)"
+>	chmod 600 "$$(${PYTHON} "${python_scripts_dir_path}/${GENCONFIGS}" --show-path)"
 
 .PHONY: ${SHELL_INSTALL}
 ${SHELL_INSTALL}:
