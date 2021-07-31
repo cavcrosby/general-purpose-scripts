@@ -112,7 +112,7 @@ ${PYTHON_INSTALL}:
 >		# additional shell setup. pyenv will still process the program name through an
 >		# appropriately (same) named shim but this will ultimately still call this shim.
 >		export PYENV_VERSION="${virtenv_name}"
->		"$${pyscript_path}" \$$@
+>		"$${pyscript_path}" "\$$@"
 >		unset PYENV_VERSION
 >	
 >		_EOF_
