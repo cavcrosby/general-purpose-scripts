@@ -20,13 +20,13 @@ import traceback
 # Third Party Imports
 
 # Local Application Imports
-import pylib
+from pylib.argparse import CustomRawDescriptionHelpFormatter
 
 # constants and other program configurations
 _PROGRAM_NAME = os.path.basename(os.path.abspath(__file__))
 _arg_parser = argparse.ArgumentParser(
     description=__doc__,
-    formatter_class=lambda prog: pylib.argparse.CustomRawDescriptionHelpFormatter(
+    formatter_class=lambda prog: CustomRawDescriptionHelpFormatter(
         prog, max_help_position=35
     ),
     allow_abbrev=False,
