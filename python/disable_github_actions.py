@@ -23,8 +23,8 @@ _arg_parser = argparse.ArgumentParser(
     allow_abbrev=False,
 )
 
-WORKFLOW_ID_PLACEHOLDER = "_WORKFLOW_ID"
-REPO_PLACEHOLDER = "_REPO"
+WORKFLOW_ID_PLACEHOLDER = "__WORKFLOW_ID__"
+REPO_PLACEHOLDER = "__REPO__"
 PAYLOAD = {"type": "all"}
 
 # positional and option arg labels
