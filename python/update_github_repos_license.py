@@ -196,8 +196,8 @@ def main(args):
                     auth=auth,
                 ).json()["name"]
                 datetime_obj = datetime.datetime.now()
-                with open(license_filename, "w") as fil:
-                    fil.write(license.generate_body())
+                with open(license_filename, "w") as file:
+                    file.write(license.generate_body())
                 subprocess.run(["git", "add", f"{license_filename}"])
                 subprocess.run(
                     [

@@ -95,12 +95,12 @@ def _get_grandparents_pid():
     ).stdout.strip()
 
 
-def _get_parent_program_name(fil):
+def _get_parent_program_name(file):
     """Determine the parent program's name.
 
     Parameters
     ----------
-    fil : str
+    file : str
         File/program name that is the parent. Intended for backwards
         compatibility with non-supported operating systems.
 
@@ -112,8 +112,8 @@ def _get_parent_program_name(fil):
     """
     mappings = {"python": 1, "python3": 1}
 
-    if fil != _EXPORT_OPTION_DEFAULT_VALUE:
-        return fil
+    if file != _EXPORT_OPTION_DEFAULT_VALUE:
+        return file
     else:
         # Grandparent's pid is needed because of the shims that are
         # called prior to the actual script.
@@ -231,8 +231,8 @@ def _load_configs():
 
     """
     try:
-        with open(GPS_CONFIG_FILE_PATH, "r") as fil:
-            return json.load(fil)
+        with open(GPS_CONFIG_FILE_PATH, "r") as file:
+            return json.load(file)
     except FileNotFoundError:
         return False
 
@@ -253,8 +253,8 @@ def main(args):
             pathlib.Path(GPS_CONFIG_FILE_DIR_PATH).mkdir(
                 parents=True, exist_ok=True
             )
-            with open(GPS_CONFIG_FILE_PATH, "w") as fil:
-                json.dump(DEFAULT_GENCONFIGS_CONFIGS, fil, indent=4)
+            with open(GPS_CONFIG_FILE_PATH, "w") as file:
+                json.dump(DEFAULT_GENCONFIGS_CONFIGS, file, indent=4)
         sys.exit(0)
     except FileNotFoundError as except_obj:
         print(
