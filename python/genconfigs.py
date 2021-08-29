@@ -81,12 +81,12 @@ DEFAULT_GENCONFIGS_CONFIGS = {
 
 def _get_grandparents_pid():
     """Return the grandparent's process id.
-    
+
     Returns
     -------
     str
         The grandparent's process id.
-    
+
     """
     return subprocess.run(
         ["ps", "--pid", str(os.getppid()), "-o", "ppid", "--no-headers"],
@@ -167,9 +167,7 @@ def retrieve_cmd_args():
             f"-{SHOW_PATH_SHORT_OPTION}",
             f"--{SHOW_PATH_CLI_NAME}",
             action="store_true",
-            help=(
-                "shows the to-be path for the generated " "configuration file"
-            ),
+            help=("shows the to-be path for the generated configuration file"),
         )
 
         args = vars(_arg_parser.parse_args())
