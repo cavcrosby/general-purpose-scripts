@@ -41,7 +41,7 @@ VIRTUALENV_PYTHON_VERSION =
 
 # simply expanded variables
 # f ==> file
-python_scripts := $(shell find ${python_scripts_dir_path} -type f -and -not -iname *.pyc -and -not -iname keys.py)
+python_scripts := $(shell find ${python_scripts_dir_path} \( -type f \) -and \( -not -iname *.pyc \) -and \( -not -iname keys.py \))
 shell_scripts := $(shell find ${shell_scripts_dir_path} -type f)
 virtenv_name := $(shell basename ${CURDIR})
 
