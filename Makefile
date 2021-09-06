@@ -34,7 +34,6 @@ SHELL_INSTALL = shell-install
 UNINSTALL = uninstall
 PYTHON_UNINSTALL = python-uninstall
 SHELL_UNINSTALL = shell-uninstall
-CLEAN = clean
 
 # to be passed in at make runtime
 VIRTUALENV_PYTHON_VERSION =
