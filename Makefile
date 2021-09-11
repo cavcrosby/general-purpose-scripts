@@ -34,6 +34,7 @@ SHELL_INSTALL = shell-install
 UNINSTALL = uninstall
 PYTHON_UNINSTALL = python-uninstall
 SHELL_UNINSTALL = shell-uninstall
+CLEAN = clean
 
 # to be passed in at make runtime
 VIRTUALENV_PYTHON_VERSION =
@@ -65,6 +66,7 @@ ${HELP}:
 >	@echo '                       target and uninstalls the virtualenv'
 >	@echo '  ${SHELL_UNINSTALL}    - removes links that were inserted by the ${SHELL_INSTALL}'
 >	@echo '                       target'
+>	@echo '  ${CLEAN}              - removes files generated from other targets'
 >	@echo 'Public make configurations (e.g. make [config]=1 [targets]):'
 >	@echo '  bin_dir                       - determines the where links are installed/uninstalled'
 >	@echo '                                  from (default is "${bin_dir}")'
@@ -152,3 +154,7 @@ ${SHELL_UNINSTALL}:
 >		echo rm --force "$${shscript_path}" "${bin_dir}/$${shscript}"; \
 >		rm --force "${bin_dir}/$${shscript}"; \
 >	done
+
+.PHONY: ${CLEAN}
+${CLEAN}:
+>	@echo "Nothing to clean!"
