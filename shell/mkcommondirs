@@ -12,10 +12,11 @@ readonly TRUE=1
 readonly HELP_SHORT_OPT="h"
 readonly HELP_LONG_OPT="help"
 COMMON_DIRS=(
-    "git"
-    "hg"
-    "src"
-    "svn"
+    "${HOME}/git"
+    "${HOME}/hg"
+    "${HOME}/src"
+    "${HOME}/svn"
+    "${GOPATH}"
 )
 # combining all short opts to form shortopts for getopt
 readonly short_opts="${HELP_SHORT_OPT}"
@@ -46,8 +47,10 @@ _EOF_
     exit 0
 fi
 
+# TODO(cavcrosby): add dry run option to view directories that may be created.
+
 for dirname in "${COMMON_DIRS[@]}"; do 
-    if ! [ -d "${HOME}/${dirname}" ]; then
+    if ! [ -d "${dirname}" ]; then
         mkdir --parents "${HOME}/$dirname"
     fi
 done
