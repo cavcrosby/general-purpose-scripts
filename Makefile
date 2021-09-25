@@ -52,7 +52,7 @@ _check_executables := $(foreach exec,${executables},$(if $(shell command -v ${ex
 .PHONY: ${HELP}
 ${HELP}:
 	# inspired by the makefiles of the Linux kernel and Mercurial
->	@echo 'Available make targets:'
+>	@echo 'Common make targets:'
 >	@echo '  ${SETUP}              - this runs additional commands in preparation to deploy'
 >	@echo '                       scripts on the current machine'
 >	@echo '  ${PYTHON_SETUP}       - creates and configures the virtualenv to be used'
@@ -67,7 +67,7 @@ ${HELP}:
 >	@echo '  ${SHELL_UNINSTALL}    - removes links that were inserted by the ${SHELL_INSTALL}'
 >	@echo '                       target'
 >	@echo '  ${CLEAN}              - removes files generated from other targets'
->	@echo 'Public make configurations (e.g. make [config]=1 [targets]):'
+>	@echo 'Common make configurations (e.g. make [config]=1 [targets]):'
 >	@echo '  bin_dir                       - determines the where links are installed/uninstalled'
 >	@echo '                                  from (default is "${bin_dir}")'
 >	@echo '  VIRTUALENV_PYTHON_VERSION     - python version used by the project virtualenv (e.g. 3.8.2)'
