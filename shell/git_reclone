@@ -54,6 +54,7 @@ while [ $# -gt 0 ]; do
     git_repo_dir="$1"
     cd "${git_repo_dir}"
     if ! git rev-parse --quiet --is-inside-work-tree > /dev/null 2>&1; then
+        # TODO(cavcrosby): figure out why -e option is used with echo
         echo -e "${PROGRAM_NAME}: ${git_repo_dir} is not a git repo!" >&2
         cd - > /dev/null
         exit
