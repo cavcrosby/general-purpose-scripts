@@ -69,7 +69,7 @@ ${HELP}:
 >	@echo '  ${CLEAN}              - removes files generated from other targets'
 >	@echo 'Common make configurations (e.g. make [config]=1 [targets]):'
 >	@echo '  bin_dir                       - determines the where links are installed/uninstalled'
->	@echo '                                  from (default is "${bin_dir}")'
+>	@echo '                                  from (default: ${bin_dir})'
 >	@echo '  VIRTUALENV_PYTHON_VERSION     - python version used by the project virtualenv (e.g. 3.8.2)'
 
 .PHONY: ${SETUP}
