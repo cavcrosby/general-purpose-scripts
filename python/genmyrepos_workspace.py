@@ -29,7 +29,8 @@ MYREPOS_WORKSPACE_FILE = "myrepos.code-workspace"
 MYREPOS_WORKSPACE_FILE_PATH = os.path.join(
     GIT_REPOS_PATH, MYREPOS_WORKSPACE_FILE
 )
-PAYLOAD = {"type": "all"}
+# per_page may need to increase overtime as I create/fork new repos
+PAYLOAD = {"type": "all", "per_page": 100}
 GITHUB_USER_REPOS_API_URL = "https://api.github.com/user/repos"
 
 # configuration keys
