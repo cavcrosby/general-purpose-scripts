@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
-"""Generates/interaces common configurations for scripts in the below repo.
+"""Generates/interaces common configurations for scripts in the gps repo.
 
 This command line tool is used to generate the configurations used by the
-scripts in the general-purpose-scripts repo. The configurations are bare and
-are expected to be modified by the end user to take full advantage of using
+scripts in the general-purpose-scripts (gps) repo. The configurations are bare
+and are expected to be modified by the end user to take full advantage of using
 all the scripts.
 
 """
