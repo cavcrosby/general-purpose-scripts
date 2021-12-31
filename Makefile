@@ -86,6 +86,10 @@ ${PYTHON_SETUP}:
 	# to ensure the most current versions of dependencies can be installed
 >	${PYTHON} -m ${PIP} install --upgrade ${PIP}
 >	${PYTHON} -m ${PIP} install ${POETRY}==1.1.7
+	# MONITOR(cavcrosby): temporary workaround due to poetry now breaking on some
+	# package installs. For reference:
+	# https://stackoverflow.com/questions/69836936/poetry-attributeerror-link-object-has-no-attribute-name#answer-69987715
+>	${PYTHON} -m ${PIP} install poetry-core==1.0.4
 	# --no-root because we only want to install dependencies. 'pyenv exec' is needed
 	# as poetry is installed into a virtualenv bin dir that is not added to the
 	# current shell PATH.
