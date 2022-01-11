@@ -13,7 +13,7 @@ POETRY = poetry
 PIP = pip
 PYENV = pyenv
 PYTHON = python
-GENCONFIGS = genconfigs.py
+GENCONFIGS = genconfigs
 executables = \
 	${PIP}\
 	${PYENV}\
@@ -124,12 +124,6 @@ ${PYTHON_INSTALL}:
 >
 >		chmod 755 "${bin_dir}/$${pyscript}"
 >	done
->
-	# just so its clear that genconfigs is a python script
->	echo ${PYTHON} "${python_scripts_dir_path}/${GENCONFIGS}"
->	${PYTHON} "${python_scripts_dir_path}/${GENCONFIGS}"
->	echo chmod 600 "$$(${PYTHON} "${python_scripts_dir_path}/${GENCONFIGS}" --show-path)"
->	chmod 600 "$$(${PYTHON} "${python_scripts_dir_path}/${GENCONFIGS}" --show-path)"
 
 .PHONY: ${SHELL_INSTALL}
 ${SHELL_INSTALL}:
@@ -138,6 +132,14 @@ ${SHELL_INSTALL}:
 >		echo ln --symbolic --force "$${shscript_path}" "${bin_dir}/$${shscript}"; \
 >		ln --symbolic --force "$${shscript_path}" "${bin_dir}/$${shscript}"; \
 >	done
+
+	# installs the genconfigs program and initializes it
+>	echo ln --symbolic --force "${CURDIR}/${GENCONFIGS}" "${bin_dir}/${GENCONFIGS}"; \
+>	ln --symbolic --force "${CURDIR}/${GENCONFIGS}" "${bin_dir}/${GENCONFIGS}"; \
+>	echo ${CURDIR}/${GENCONFIGS}
+>	${CURDIR}/${GENCONFIGS}
+>	echo chmod 600 "$$(${CURDIR}/${GENCONFIGS} --show-path)"
+>	chmod 600 "$$(${CURDIR}/${GENCONFIGS} --show-path)"
 
 .PHONY: ${UNINSTALL}
 ${UNINSTALL}: ${PYTHON_UNINSTALL} ${SHELL_UNINSTALL}

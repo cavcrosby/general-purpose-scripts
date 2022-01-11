@@ -1,0 +1,155 @@
+#!/bin/bash
+#
+# Generates/interaces common configurations for scripts in this repo.
+
+set -e
+
+# constants and defined cli parameters
+PROGRAM_NAME="$(basename "$0")"
+readonly PROGRAM_NAME
+readonly FALSE=0
+readonly TRUE=1
+readonly EXPORT_SHORT_OPT="e"
+readonly EXPORT_LONG_OPT="export"
+readonly HELP_SHORT_OPT="h"
+readonly HELP_LONG_OPT="help"
+readonly SHOW_PATH_SHORT_OPT="s"
+readonly SHOW_PATH_LONG_OPT="show-path"
+
+readonly GPS_CONFIG_FILE="gps.json"
+readonly GPS_CONFIG_FILE_DIR_PATH="${XDG_CONFIG_HOME:-$HOME/.config/$PROGRAM_NAME}"
+readonly GPS_CONFIG_FILE_PATH="${GPS_CONFIG_FILE_DIR_PATH}/${GPS_CONFIG_FILE}"
+export GPS_CONFIG_FILE GPS_CONFIG_FILE_DIR_PATH GPS_CONFIG_FILE_PATH
+
+# configuration keys
+
+readonly GITHUB_USERNAME_KEY="github_username"
+readonly GITHUB_API_TOKEN_KEY="github_api_token"
+readonly SCRIPT_CONFIGS_KEY="script_configs"
+readonly WEBHOSTED_GIT_ACCOUNT_URL_KEY="webhosted_git_account_url"
+readonly FORKED_REPOS_TO_UPSTREAM_URLS_KEY="forked_repos_to_upstream_urls"
+readonly OWNER_KEY="owner"
+export GITHUB_USERNAME_KEY GITHUB_API_TOKEN_KEY SCRIPT_CONFIGS_KEY \
+WEBHOSTED_GIT_ACCOUNT_URL_KEY FORKED_REPOS_TO_UPSTREAM_URLS_KEY OWNER_KEY
+
+# scripts
+
+readonly DISABLE_GITHUB_ACTIONS="disable_github_actions.py"
+readonly UPDATE_REMOTE_FORKS="update_remote_forks.py"
+export DISABLE_GITHUB_ACTIONS UPDATE_REMOTE_FORKS
+
+# combining all short opts to form shortopts for getopt
+readonly short_opts="${HELP_SHORT_OPT}"\
+"${SHOW_PATH_SHORT_OPT}"\
+"${EXPORT_SHORT_OPT}"
+
+help_option="${FALSE}"
+show_path_option="${FALSE}"
+export_option="${FALSE}"
+export_script_name=""
+
+declare -A CMD_MAPPINGS=(
+    ["python"]=1
+    ["python3"]=1
+)
+
+# shellcheck disable=2016
+DEFAULT_GENCONFIGS_CONFIGS='{
+    "${GITHUB_USERNAME_KEY}": "",
+    "${GITHUB_API_TOKEN_KEY}": "",
+    "${SCRIPT_CONFIGS_KEY}": {
+        "${UPDATE_REMOTE_FORKS}": {
+            "${WEBHOSTED_GIT_ACCOUNT_URL_KEY}": "",
+            "${FORKED_REPOS_TO_UPSTREAM_URLS_KEY}": {
+                "awesome-python": "https://github.com/vinta/awesome-python"
+            }
+        },
+        "${DISABLE_GITHUB_ACTIONS}": {"${OWNER_KEY}": ""}
+    }
+}'
+
+# do not combine long opts into their own variable
+eval set -- "$(getopt --options "${short_opts}" --long \
+"${HELP_LONG_OPT}",\
+"${SHOW_PATH_LONG_OPT}",\
+"${EXPORT_LONG_OPT}" --name "${PROGRAM_NAME}" -- "$@")"
+
+# determine behavior of program from cli arguments
+while true; do
+    case "$1" in
+        "-${HELP_SHORT_OPT}" | "--${HELP_LONG_OPT}")                help_option="${TRUE}"; shift ;;
+        "-${SHOW_PATH_SHORT_OPT}" | "--${SHOW_PATH_LONG_OPT}")      show_path_option="${TRUE}"; shift ;;
+        "-${EXPORT_SHORT_OPT}" | "--${EXPORT_LONG_OPT}")            export_option="${TRUE}"; export_script_name="$3"; shift 2 ;;
+        "--")                                                       shift; break ;;
+        *)                                                          break ;;
+    esac
+done
+
+if (( help_option )); then
+        cat << _EOF_
+Usage: ${PROGRAM_NAME} [-${EXPORT_SHORT_OPT} SCRIPT_NAME] [-${HELP_SHORT_OPT}] [-${SHOW_PATH_SHORT_OPT}]
+
+Generates/interaces common configurations for scripts in the gps repo.
+
+This command line tool is used to generate the configurations used by the
+scripts in the general-purpose-scripts (gps) repo. The configurations are bare
+and are expected to be modified by the end user to take full advantage of using
+all the scripts.
+
+Options:
+    -${EXPORT_SHORT_OPT}, --${EXPORT_LONG_OPT}           creates the intermediate configuration file tailored to a script
+    -${HELP_SHORT_OPT}, --${HELP_LONG_OPT}             show this help message and exit
+    -${SHOW_PATH_SHORT_OPT}, --${SHOW_PATH_LONG_OPT}        shows the to-be path for the generated configuration file
+
+_EOF_
+    exit 0
+fi
+
+if (( show_path_option )); then
+    echo "${GPS_CONFIG_FILE_PATH}"
+elif (( export_option )); then
+    if ! [ -f "${GPS_CONFIG_FILE_PATH}" ]; then
+        echo "${PROGRAM_NAME}: could not find file: ${GPS_CONFIG_FILE_PATH}" >&2
+        exit 1
+    elif ! jq < "${GPS_CONFIG_FILE_PATH}" > /dev/null 2>&1; then
+        echo "${PROGRAM_NAME}: the configuration file contains invalid json" >&2
+        exit 1
+    fi
+
+    # It is anticipated that another program will call this script, hence 'ps' will be
+    # running in relation as the grand-child process from the original calling
+    # program. Here we wish to determine the grandparent's program/script name.
+    if [ -z "${export_script_name}" ]; then
+        pid="$$"
+        # xargs trims any stdin to it by default...neat! For reference:
+        # https://stackoverflow.com/questions/369758/how-to-trim-whitespace-from-a-bash-variable
+        counter=0
+        declare -a cmd_arr=()
+        for cmd_arg in $(ps --pid "$(ps --pid $pid -o ppid --no-headers | xargs)" -o command --no-headers | xargs); do
+            cmd_arr["${counter}"]="${cmd_arg}"
+            _=$(( counter++ ))
+        done
+
+        exec_name="$(basename "${cmd_arr[0]}")"
+        script_index="${CMD_MAPPINGS["${exec_name}"]}"
+        if [ -n "${script_index}" ]; then
+            export_script_name="$(basename "${cmd_arr["${script_index}"]}")"
+        fi
+    fi
+
+    # Script configurations are added to the root node. Which may at most
+    # have two child nodes. From there, the script configurations tree
+    # is removed.
+    jq < "${GPS_CONFIG_FILE_PATH}" \
+        '. | . + .[$SCRIPT_CONFIGS_KEY][$script_name] | del(.[$SCRIPT_CONFIGS_KEY])' \
+        --arg SCRIPT_CONFIGS_KEY "${SCRIPT_CONFIGS_KEY}" \
+        --arg script_name "${export_script_name}"
+else
+    mkdir --parents "${GPS_CONFIG_FILE_DIR_PATH}"
+    # shellcheck disable=2016
+    echo "${DEFAULT_GENCONFIGS_CONFIGS}" | envsubst '
+        ${GITHUB_USERNAME_KEY} ${GITHUB_API_TOKEN_KEY} ${SCRIPT_CONFIGS_KEY}\
+        ${UPDATE_REMOTE_FORKS} ${WEBHOSTED_GIT_ACCOUNT_URL_KEY}\
+        ${FORKED_REPOS_TO_UPSTREAM_URLS_KEY} ${DISABLE_GITHUB_ACTIONS} ${OWNER_KEY}
+    ' > "${GPS_CONFIG_FILE_PATH}"
+fi

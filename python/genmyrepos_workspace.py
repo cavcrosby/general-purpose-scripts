@@ -65,7 +65,7 @@ def main(args):
     """Start the main program execution."""
     configs = json.loads(
         subprocess.run(
-            ["genconfigs.py", "--export"],
+            ["genconfigs", "--export"],
             capture_output=True,
             encoding="utf-8",
             check=True,
