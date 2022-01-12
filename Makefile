@@ -29,6 +29,7 @@ bin_dir = ${exec_prefix}/bin
 HELP = help
 SETUP = setup
 PYTHON_SETUP = python-setup
+SHELL_SETUP = shell-setup
 INSTALL = install
 PYTHON_INSTALL = python-install
 SHELL_INSTALL = shell-install
@@ -70,7 +71,7 @@ ${HELP}:
 >	@echo '                                  from (default: ${bin_dir})'
 
 .PHONY: ${SETUP}
-${SETUP}: ${PYTHON_SETUP}
+${SETUP}: ${PYTHON_SETUP} ${SHELL_SETUP}
 
 .PHONY: ${PYTHON_SETUP}
 ${PYTHON_SETUP}:
@@ -95,6 +96,9 @@ ${PYTHON_SETUP}:
 	# current shell PATH.
 >	${PYENV} exec ${POETRY} install --no-root || { echo "${POETRY} failed to install project dependencies"; exit 1; }
 >	unset PYENV_VERSION
+
+.PHONY: ${SHELL_SETUP}
+${SHELL_SETUP}: ;
 
 # .ONESHELL is needed to ensure all the commands below run in one shell session.
 # Also, DO NOT quote the *_scripts variables! This seems to cause the shell not
@@ -163,4 +167,4 @@ ${SHELL_UNINSTALL}:
 
 .PHONY: ${CLEAN}
 ${CLEAN}:
->	@echo "Nothing to clean!"
+>	@echo "make: nothing to clean!"
