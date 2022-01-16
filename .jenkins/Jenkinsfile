@@ -35,7 +35,7 @@ pipeline {
                 }
             }
             steps {
-                sh './bin/${SCRIPT_NAME} ${SCRIPT_ARGS}'
+                sh 'PATH="${PWD}/bin/:${PATH}" ./bin/${SCRIPT_NAME} ${SCRIPT_ARGS}'
             }
         }
     }
