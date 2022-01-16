@@ -54,14 +54,16 @@ def retrieve_cmd_args():
 
 def main(args):
     """Start the main program execution."""
-    configs = json.loads(
-        subprocess.run(
-            ["genconfigs", "--export"],
-            capture_output=True,
-            encoding="utf-8",
-            check=True,
-        ).stdout.strip()
-    )
+    configs = json.loads(sys.stdin.buffer.read().decode("utf-8").strip())
+    if not configs:
+        configs = json.loads(
+            subprocess.run(
+                ["genconfigs", "--export"],
+                capture_output=True,
+                encoding="utf-8",
+                check=True,
+            ).stdout.strip()
+        )
     owner = configs[keys.GITHUB_USERNAME_KEY]
     workflows_url = f"https://api.github.com/repos/{owner}/{REPO_PLACEHOLDER}/actions/workflows"
     workflows_disable_url = f"https://api.github.com/repos/{owner}/{REPO_PLACEHOLDER}/actions/workflows/{WORKFLOW_ID_PLACEHOLDER}/disable"

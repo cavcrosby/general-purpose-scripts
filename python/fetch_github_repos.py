@@ -49,14 +49,16 @@ def retrieve_cmd_args():
 
 def main(args):
     """Start the main program execution."""
-    configs = json.loads(
-        subprocess.run(
-            ["genconfigs", "--export"],
-            capture_output=True,
-            encoding="utf-8",
-            check=True,
-        ).stdout.strip()
-    )
+    configs = json.loads(sys.stdin.buffer.read().decode("utf-8").strip())
+    if not configs:
+        configs = json.loads(
+            subprocess.run(
+                ["genconfigs", "--export"],
+                capture_output=True,
+                encoding="utf-8",
+                check=True,
+            ).stdout.strip()
+        )
     auth = pylib.githubauth.GitHubAuth(configs[keys.GITHUB_API_TOKEN_KEY])
     repos = requests.get(GITHUB_API_URL, auth=auth, params=PAYLOAD)
     repo_names_to_urls = {
