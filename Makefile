@@ -15,9 +15,7 @@ PYENV = pyenv
 PYTHON = python
 GENCONFIGS = genconfigs
 executables = \
-	${PIP}\
-	${PYENV}\
-	${PYTHON}
+	${PYENV}
 
 # gnu install directory variables
 prefix = ${HOME}/.local
