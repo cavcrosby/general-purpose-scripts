@@ -87,9 +87,9 @@ ${HELP}:
 >	@echo '  ${UNINSTALL}          - removes scripts that were inserted by the ${INSTALL} target'
 >	@echo '  ${CLEAN}              - removes files generated from other targets'
 >	@echo 'Common make configurations (e.g. make [config]=1 [targets]):'
->	@echo '  bin_dir                       - determines the where links are installed/uninstalled'
->	@echo '                                  from (default: ${bin_dir})'
->	@echo '  LANG                          - determines which set of scripts to perform on'
+>	@echo '  bin_dir            - determines the where links are installed/uninstalled'
+>	@echo '                       from (default: $${HOME}/.local/bin)'
+>	@echo '  LANG               - determines which set of scripts to perform on'
 
 .PHONY: ${SETUP}
 ${SETUP}:
