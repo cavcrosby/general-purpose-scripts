@@ -27,9 +27,7 @@ pipelineJob ('general-purpose-scripts') {
     }
 
     properties {
-
         pipelineTriggers{
-
             triggers {
                 pollSCM{
                     scmpoll_spec('H/5 * * * *')
@@ -38,8 +36,6 @@ pipelineJob ('general-purpose-scripts') {
                     parameterizedSpecification('''''')
                 }
             }
-
         }
-
     }
 }
