@@ -16,8 +16,8 @@ pipeline {
             }
             steps {
                 checkout scm
-                sh 'make PROGLANG=python setup'
-                sh 'make PROGLANG=python install'
+                sh 'make prefix="${PWD}" PROGLANG=python setup'
+                sh 'make prefix="${PWD}" PROGLANG=python install'
             }
         }
         stage('Build (shell)') {
@@ -28,8 +28,8 @@ pipeline {
             }
             steps {
                 checkout scm
-                sh 'make PROGLANG=shell install'
-                sh 'make PROGLANG=shell install'
+                sh 'make prefix="${PWD}" PROGLANG=shell install'
+                sh 'make prefix="${PWD}" PROGLANG=shell install'
             }
         }
         stage('Run') {
@@ -41,9 +41,7 @@ pipeline {
                 }
             }
             steps {
-                dir('/tmp') {
-                    sh '${SCRIPT_NAME} ${SCRIPT_ARGS}'
-                }
+                sh './bin/${SCRIPT_NAME} ${SCRIPT_ARGS}'
             }
         }
     }
@@ -57,6 +55,7 @@ pipeline {
         cleanup {
             // inspired by:
             // https://stackoverflow.com/questions/37468455/jenkins-pipeline-wipe-out-workspace#answer-46914723
+            sh 'make prefix="${PWD}" uninstall'
             cleanWs()
         }
     }
