@@ -16,8 +16,8 @@ pipeline {
             }
             steps {
                 checkout scm
-                sh 'make python-setup'
-                sh 'make python-install'
+                sh 'make LANG=python setup'
+                sh 'make LANG=python install'
             }
         }
         stage('Build (shell)') {
@@ -28,8 +28,8 @@ pipeline {
             }
             steps {
                 checkout scm
-                sh 'make shell-setup'
-                sh 'make shell-install'
+                sh 'make LANG=shell install'
+                sh 'make LANG=shell install'
             }
         }
         stage('Run') {
