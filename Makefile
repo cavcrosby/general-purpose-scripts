@@ -147,6 +147,8 @@ ifdef PYTHON_INSTALL
 >		# additional shell setup. pyenv will still process the program name through an
 >		# appropriately (same) named shim but this will ultimately still call this shim.
 >		export PYENV_VERSION="${python_virtualenv_name}"
+>		PATH="$${PYENV_ROOT}/plugins/pyenv-virtualenv/shims:$${PYENV_ROOT}/shims:$${PYENV_ROOT}/bin:$${PATH}"
+>		export PATH
 >		"$${pyscript_path}" "\$$@"
 >		unset PYENV_VERSION
 >	
