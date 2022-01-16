@@ -70,6 +70,7 @@ ${HELP}:
 
 .PHONY: ${SETUP}
 ${SETUP}: ${PYTHON_SETUP} ${SHELL_SETUP}
+>	mkdir --parents "${bin_dir}"
 
 .PHONY: ${PYTHON_SETUP}
 ${PYTHON_SETUP}:
