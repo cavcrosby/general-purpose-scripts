@@ -31,39 +31,39 @@ UNINSTALL = uninstall
 CLEAN = clean
 
 # to be passed in at make runtime
-LANG = all
+PROGLANG = all
 
 # determines which actions to perform on the selected set of scripts
-ifeq (${LANG}, python)
+ifeq (${PROGLANG}, python)
 	PYTHON_SETUP=1
-else ifeq (${LANG}, all)
+else ifeq (${PROGLANG}, all)
 	PYTHON_SETUP=1
 endif
-ifeq (${LANG}, shell)
+ifeq (${PROGLANG}, shell)
 	SHELL_SETUP=1
-else ifeq (${LANG}, all)
+else ifeq (${PROGLANG}, all)
 	SHELL_SETUP=1
 endif
 
-ifeq (${LANG}, python)
+ifeq (${PROGLANG}, python)
 	PYTHON_INSTALL=1
-else ifeq (${LANG}, all)
+else ifeq (${PROGLANG}, all)
 	PYTHON_INSTALL=1
 endif
-ifeq (${LANG}, shell)
+ifeq (${PROGLANG}, shell)
 	SHELL_INSTALL=1
-else ifeq (${LANG}, all)
+else ifeq (${PROGLANG}, all)
 	SHELL_INSTALL=1
 endif
 
-ifeq (${LANG}, python)
+ifeq (${PROGLANG}, python)
 	PYTHON_UNINSTALL=1
-else ifeq (${LANG}, all)
+else ifeq (${PROGLANG}, all)
 	PYTHON_UNINSTALL=1
 endif
-ifeq (${LANG}, shell)
+ifeq (${PROGLANG}, shell)
 	SHELL_UNINSTALL=1
-else ifeq (${LANG}, all)
+else ifeq (${PROGLANG}, all)
 	SHELL_UNINSTALL=1
 endif
 
@@ -89,7 +89,7 @@ ${HELP}:
 >	@echo 'Common make configurations (e.g. make [config]=1 [targets]):'
 >	@echo '  bin_dir            - determines the where links are installed/uninstalled'
 >	@echo '                       from (default: $${HOME}/.local/bin)'
->	@echo '  LANG               - determines which set of scripts to perform on'
+>	@echo '  PROGLANG           - determines which set of scripts to perform on'
 
 .PHONY: ${SETUP}
 ${SETUP}:
