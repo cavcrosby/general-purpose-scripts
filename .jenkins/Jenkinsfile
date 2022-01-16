@@ -35,7 +35,7 @@ pipeline {
                 }
             }
             steps {
-                sh 'PATH="${PWD}/bin/:${PATH}" ./bin/${SCRIPT_NAME} ${SCRIPT_ARGS}'
+                sh './bin/${SCRIPT_NAME} ${SCRIPT_ARGS} <<< "$(./bin/genconfigs -e ${SCRIPT_NAME})"'
             }
         }
     }
