@@ -30,8 +30,6 @@ PAYLOAD = {"type": "all"}
 # positional and option arg labels
 # used at the command line and to reference values of arguments
 
-REPO_NAME_POSITIONAL_ARG = "repo_name"
-
 
 def retrieve_cmd_args():
     """Retrieve command arguments from the command line.
@@ -48,13 +46,6 @@ def retrieve_cmd_args():
 
     """
     try:
-        _arg_parser.add_argument(
-            f"{REPO_NAME_POSITIONAL_ARG}",
-            action="append",
-            help="represents the github repo name",
-            metavar=REPO_NAME_POSITIONAL_ARG.upper(),
-        )
-
         args = vars(_arg_parser.parse_args())
         return args
     except SystemExit:
@@ -71,7 +62,7 @@ def main(args):
             check=True,
         ).stdout.strip()
     )
-    owner = configs[keys.OWNER_KEY]
+    owner = configs[keys.GITHUB_USERNAME_KEY]
     workflows_url = f"https://api.github.com/repos/{owner}/{REPO_PLACEHOLDER}/actions/workflows"
     workflows_disable_url = f"https://api.github.com/repos/{owner}/{REPO_PLACEHOLDER}/actions/workflows/{WORKFLOW_ID_PLACEHOLDER}/disable"
     auth = pylib.githubauth.GitHubAuth(configs[keys.GITHUB_API_TOKEN_KEY])
@@ -81,7 +72,7 @@ def main(args):
             auth=auth,
             params=PAYLOAD,
         ).json()
-        for repo in args[REPO_NAME_POSITIONAL_ARG]
+        for repo in configs[keys.REPO_NAMES_KEY]
     }
     for repo, workflows in repos_to_workflows.items():
         if workflows["total_count"] > 0:

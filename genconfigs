@@ -30,9 +30,12 @@ readonly GITHUB_API_TOKEN_KEY="github_api_token"
 readonly SCRIPT_CONFIGS_KEY="script_configs"
 readonly WEBHOSTED_GIT_ACCOUNT_URL_KEY="webhosted_git_account_url"
 readonly FORKED_REPOS_TO_UPSTREAM_URLS_KEY="forked_repos_to_upstream_urls"
-readonly OWNER_KEY="owner"
+readonly REPO_NAMES_KEY="repo_names"
+
+# export config keys so jq can can place the actual key values in the json
 export GITHUB_USERNAME_KEY GITHUB_API_TOKEN_KEY SCRIPT_CONFIGS_KEY \
-WEBHOSTED_GIT_ACCOUNT_URL_KEY FORKED_REPOS_TO_UPSTREAM_URLS_KEY OWNER_KEY
+WEBHOSTED_GIT_ACCOUNT_URL_KEY FORKED_REPOS_TO_UPSTREAM_URLS_KEY OWNER_KEY \
+REPO_NAMES_KEY
 
 # scripts
 
@@ -67,7 +70,11 @@ DEFAULT_GENCONFIGS_CONFIGS='{
                 "awesome-python": "https://github.com/vinta/awesome-python"
             }
         },
-        "${DISABLE_GITHUB_ACTIONS}": {"${OWNER_KEY}": ""}
+        "${DISABLE_GITHUB_ACTIONS}": {
+            "${REPO_NAMES_KEY}": [
+                "debcomprt"
+            ]
+        }
     }
 }'
 
@@ -191,7 +198,7 @@ else
         echo "${DEFAULT_GENCONFIGS_CONFIGS}" | envsubst '
             ${GITHUB_USERNAME_KEY} ${GITHUB_API_TOKEN_KEY} ${SCRIPT_CONFIGS_KEY}\
             ${UPDATE_REMOTE_FORKS} ${WEBHOSTED_GIT_ACCOUNT_URL_KEY}\
-            ${FORKED_REPOS_TO_UPSTREAM_URLS_KEY} ${DISABLE_GITHUB_ACTIONS} ${OWNER_KEY}
+            ${FORKED_REPOS_TO_UPSTREAM_URLS_KEY} ${DISABLE_GITHUB_ACTIONS} ${REPO_NAMES_KEY}
         ' > "${active_config_file_path_placement}"
     fi
     echo "${active_config_file_path_placement}" > "${GPS_ACTIVE_CONFIG_DOTFILE_PATH}"
