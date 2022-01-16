@@ -1,0 +1,63 @@
+pipeline {
+    agent any
+    // parameters {
+    //     string(name: 'SCRIPT_NAME', defaultValue: 'fetch_github_repos.py', description: 'The name of the script to run.'),
+    //     string(name: 'SCRIPT_ARGS', defaultValue: '-h', description: 'The arguments to append to the script, should be a space separated character string (e.g. "--foo bar baz").'),
+    //     string(name: 'PIPELINE_MODE', defaultValue: 'test', description: 'The "mode" in which this particular pipeline should run in.'),
+    //     string(name: 'PROGLANG', defaultValue: 'python', description: 'The programming language the script was written in.')
+    // }
+
+    stages {
+        stage('Build (python)') {
+            when {
+                expression {
+                    "${params.PROGLANG}".toLowerCase() == "python"
+                }
+            }
+            steps {
+                checkout scm
+                sh 'make python-setup'
+                sh 'make python-install'
+            }
+        }
+        stage('Build (shell)') {
+            when {
+                expression {
+                    "${params.PROGLANG}".toLowerCase() == "shell"
+                }
+            }
+            steps {
+                checkout scm
+                sh 'make shell-setup'
+                sh 'make shell-install'
+            }
+        }
+        stage('Run') {
+            when {
+                // Accessing the currentBuild.result variable allows the pipeline to determine if
+                // there were any failures in the previous stages.
+                expression {
+                    currentBuild.result == null || currentBuild.result == 'SUCCESS' && "${params.PIPELINE_MODE}".toLowerCase() == "run"
+                }
+            }
+            steps {
+                dir('/tmp') {
+                    sh '${SCRIPT_NAME} ${SCRIPT_ARGS}'
+                }
+            }
+        }
+    }
+
+    post {
+        failure {
+            emailext body: 'Check console output at ${BUILD_URL} to view the results. \n\n ${CHANGES} \n\n -------------------------------------------------- \n${BUILD_LOG, maxLines=100, escapeHtml=false}',
+                     to: System.getenv('JENKINS_ADMIN_EMAIL') ?: "",
+                     subject: "Build failed in Jenkins: ${JOB_NAME} - #${BUILD_NUMBER}"
+        }
+        cleanup {
+            // inspired by:
+            // https://stackoverflow.com/questions/37468455/jenkins-pipeline-wipe-out-workspace#answer-46914723
+            cleanWs()
+        }
+    }
+}
