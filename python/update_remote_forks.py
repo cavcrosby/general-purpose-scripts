@@ -138,11 +138,6 @@ def main(args):
             encoding="utf-8",
             check=True,
         )
-        subprocess.run(
-            ("disable_github_actions.py", forked_repo),
-            encoding="utf-8",
-            check=True,
-        )
         os.chdir("..")
     os.chdir("..")
     shutil.rmtree(_TEMP_DIR)
