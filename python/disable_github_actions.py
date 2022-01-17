@@ -30,6 +30,9 @@ PAYLOAD = {"type": "all"}
 # positional and option arg labels
 # used at the command line and to reference values of arguments
 
+STDIN_SHORT_OPTION = "s"
+STDIN_LONG_OPTION = "stdin"
+
 
 def retrieve_cmd_args():
     """Retrieve command arguments from the command line.
@@ -46,6 +49,13 @@ def retrieve_cmd_args():
 
     """
     try:
+        _arg_parser.add_argument(
+            f"-{STDIN_SHORT_OPTION}",
+            f"--{STDIN_LONG_OPTION}",
+            action="store_true",
+            help="read the gps configuration from stdin",
+        )
+
         args = vars(_arg_parser.parse_args())
         return args
     except SystemExit:
@@ -54,8 +64,9 @@ def retrieve_cmd_args():
 
 def main(args):
     """Start the main program execution."""
-    configs = json.loads(sys.stdin.buffer.read().decode("utf-8").strip())
-    if not configs:
+    if args[STDIN_LONG_OPTION]:
+        configs = json.loads(sys.stdin.buffer.read().decode("utf-8").strip())
+    else:
         configs = json.loads(
             subprocess.run(
                 ["genconfigs", "--export"],

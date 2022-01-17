@@ -36,6 +36,8 @@ GITHUB_USER_REPO_API_URL = "https://api.github.com/user/repos"
 # positional and option arg labels
 # used at the command line and to reference values of arguments
 
+STDIN_SHORT_OPTION = "s"
+STDIN_LONG_OPTION = "stdin"
 LICENSE_POSITIONAL_ARG = "license"
 
 
@@ -152,6 +154,13 @@ def retrieve_cmd_args():
             for license in args[LICENSE_POSITIONAL_ARG]
         ]
 
+        _arg_parser.add_argument(
+            f"-{STDIN_SHORT_OPTION}",
+            f"--{STDIN_LONG_OPTION}",
+            action="store_true",
+            help="read the gps configuration from stdin",
+        )
+
         return args
     except SystemExit:
         sys.exit(1)
@@ -159,8 +168,9 @@ def retrieve_cmd_args():
 
 def main(args):
     """Start the main program execution."""
-    configs = json.loads(sys.stdin.buffer.read().decode("utf-8").strip())
-    if not configs:
+    if args[STDIN_LONG_OPTION]:
+        configs = json.loads(sys.stdin.buffer.read().decode("utf-8").strip())
+    else:
         configs = json.loads(
             subprocess.run(
                 ["genconfigs", "--export"],
