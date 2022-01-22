@@ -150,6 +150,9 @@ ifdef PYTHON_INSTALL
 >		# PYENV_VERSION allows the program to run in the python_virtualenv_name without doing
 >		# additional shell setup. pyenv will still process the program name through an
 >		# appropriately (same) named shim but this will ultimately still call this shim.
+>		
+>		set -e
+>
 >		export PYENV_VERSION="${python_virtualenv_name}"
 >		PATH="$${PYENV_ROOT}/plugins/pyenv-virtualenv/shims:$${PYENV_ROOT}/shims:$${PYENV_ROOT}/bin:$${PATH}"
 >		export PATH
