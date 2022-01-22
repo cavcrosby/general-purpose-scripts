@@ -9,6 +9,8 @@ PROGRAM_NAME="$(basename "$0")"
 readonly PROGRAM_NAME
 readonly FALSE=0
 readonly TRUE=1
+readonly CONFIG_SHORT_OPT="c"
+readonly CONFIG_LONG_OPT="config-path"
 readonly EXPORT_SHORT_OPT="e"
 readonly EXPORT_LONG_OPT="export"
 readonly HELP_SHORT_OPT="h"
@@ -18,8 +20,8 @@ readonly SHOW_PATH_LONG_OPT="show-path"
 
 readonly GPS_CONFIG_FILE="gps.json"
 readonly GPS_CONFIG_FILE_DIR_PATH="${XDG_CONFIG_HOME:-$HOME/.config/$PROGRAM_NAME}"
-readonly GPS_CONFIG_FILE_PATH="${GPS_CONFIG_FILE_DIR_PATH}/${GPS_CONFIG_FILE}"
-export GPS_CONFIG_FILE GPS_CONFIG_FILE_DIR_PATH GPS_CONFIG_FILE_PATH
+readonly DEFAULT_GPS_CONFIG_FILE_PATH="${GPS_CONFIG_FILE_DIR_PATH}/${GPS_CONFIG_FILE}"
+readonly GPS_ACTIVE_CONFIG_DOTFILE_PATH="${GPS_CONFIG_FILE_DIR_PATH}/.active_config"
 
 # configuration keys
 
@@ -28,9 +30,12 @@ readonly GITHUB_API_TOKEN_KEY="github_api_token"
 readonly SCRIPT_CONFIGS_KEY="script_configs"
 readonly WEBHOSTED_GIT_ACCOUNT_URL_KEY="webhosted_git_account_url"
 readonly FORKED_REPOS_TO_UPSTREAM_URLS_KEY="forked_repos_to_upstream_urls"
-readonly OWNER_KEY="owner"
+readonly REPO_NAMES_KEY="repo_names"
+
+# export config keys so jq can can place the actual key values in the json
 export GITHUB_USERNAME_KEY GITHUB_API_TOKEN_KEY SCRIPT_CONFIGS_KEY \
-WEBHOSTED_GIT_ACCOUNT_URL_KEY FORKED_REPOS_TO_UPSTREAM_URLS_KEY OWNER_KEY
+WEBHOSTED_GIT_ACCOUNT_URL_KEY FORKED_REPOS_TO_UPSTREAM_URLS_KEY OWNER_KEY \
+REPO_NAMES_KEY
 
 # scripts
 
@@ -41,7 +46,8 @@ export DISABLE_GITHUB_ACTIONS UPDATE_REMOTE_FORKS
 # combining all short opts to form shortopts for getopt
 readonly short_opts="${HELP_SHORT_OPT}"\
 "${SHOW_PATH_SHORT_OPT}"\
-"${EXPORT_SHORT_OPT}"
+"${EXPORT_SHORT_OPT}"\
+"${CONFIG_SHORT_OPT}"
 
 help_option="${FALSE}"
 show_path_option="${FALSE}"
@@ -64,7 +70,11 @@ DEFAULT_GENCONFIGS_CONFIGS='{
                 "awesome-python": "https://github.com/vinta/awesome-python"
             }
         },
-        "${DISABLE_GITHUB_ACTIONS}": {"${OWNER_KEY}": ""}
+        "${DISABLE_GITHUB_ACTIONS}": {
+            "${REPO_NAMES_KEY}": [
+                "debcomprt"
+            ]
+        }
     }
 }'
 
@@ -72,7 +82,8 @@ DEFAULT_GENCONFIGS_CONFIGS='{
 eval set -- "$(getopt --options "${short_opts}" --long \
 "${HELP_LONG_OPT}",\
 "${SHOW_PATH_LONG_OPT}",\
-"${EXPORT_LONG_OPT}" --name "${PROGRAM_NAME}" -- "$@")"
+"${EXPORT_LONG_OPT}",\
+"${CONFIG_LONG_OPT}" --name "${PROGRAM_NAME}" -- "$@")"
 
 # determine behavior of program from cli arguments
 while true; do
@@ -80,6 +91,7 @@ while true; do
         "-${HELP_SHORT_OPT}" | "--${HELP_LONG_OPT}")                help_option="${TRUE}"; shift ;;
         "-${SHOW_PATH_SHORT_OPT}" | "--${SHOW_PATH_LONG_OPT}")      show_path_option="${TRUE}"; shift ;;
         "-${EXPORT_SHORT_OPT}" | "--${EXPORT_LONG_OPT}")            export_option="${TRUE}"; export_script_name="$3"; shift 2 ;;
+        "-${CONFIG_SHORT_OPT}" | "--${CONFIG_LONG_OPT}")            config_path="$3"; shift 2 ;;
         "--")                                                       shift; break ;;
         *)                                                          break ;;
     esac
@@ -87,7 +99,7 @@ done
 
 if (( help_option )); then
         cat << _EOF_
-Usage: ${PROGRAM_NAME} [-${EXPORT_SHORT_OPT} SCRIPT_NAME] [-${HELP_SHORT_OPT}] [-${SHOW_PATH_SHORT_OPT}]
+Usage: ${PROGRAM_NAME} [-${CONFIG_SHORT_OPT} CONFIG_PATH] [-${EXPORT_SHORT_OPT} SCRIPT_NAME] [-${HELP_SHORT_OPT}] [-${SHOW_PATH_SHORT_OPT}]
 
 Generates/interaces common configurations for scripts in the gps repo.
 
@@ -97,6 +109,7 @@ and are expected to be modified by the end user to take full advantage of using
 all the scripts.
 
 Options:
+    -${CONFIG_SHORT_OPT}, --${CONFIG_LONG_OPT}      set an alternative configuration file path to use
     -${EXPORT_SHORT_OPT}, --${EXPORT_LONG_OPT}           creates the intermediate configuration file tailored to a script
     -${HELP_SHORT_OPT}, --${HELP_LONG_OPT}             show this help message and exit
     -${SHOW_PATH_SHORT_OPT}, --${SHOW_PATH_LONG_OPT}        shows the to-be path for the generated configuration file
@@ -105,14 +118,20 @@ _EOF_
     exit 0
 fi
 
-if (( show_path_option )); then
-    echo "${GPS_CONFIG_FILE_PATH}"
-elif (( export_option )); then
-    if ! [ -f "${GPS_CONFIG_FILE_PATH}" ]; then
-        echo "${PROGRAM_NAME}: could not find file: ${GPS_CONFIG_FILE_PATH}" >&2
+if  (( show_path_option )) \
+    || (( export_option )) \
+    && ! [ -f "${GPS_ACTIVE_CONFIG_DOTFILE_PATH}" ]; then
+        echo "${PROGRAM_NAME}: no active configuration has been set yet: run ./${PROGRAM_NAME}" >&2
         exit 1
-    elif ! jq < "${GPS_CONFIG_FILE_PATH}" > /dev/null 2>&1; then
-        echo "${PROGRAM_NAME}: the configuration file contains invalid json" >&2
+elif (( show_path_option )); then
+    cat "${GPS_ACTIVE_CONFIG_DOTFILE_PATH}"
+elif (( export_option )); then
+    active_config_file_path="$(cat "${GPS_ACTIVE_CONFIG_DOTFILE_PATH}")"
+    if ! [ -f "${active_config_file_path}" ]; then
+        echo "${PROGRAM_NAME}: could not find file: ${active_config_file_path}" >&2
+        exit 1
+    elif ! jq < "${active_config_file_path}" > /dev/null 2>&1; then
+        echo "${PROGRAM_NAME}: the configuration file contains invalid json: ${active_config_file_path}" >&2
         exit 1
     fi
 
@@ -140,16 +159,47 @@ elif (( export_option )); then
     # Script configurations are added to the root node. Which may at most
     # have two child nodes. From there, the script configurations tree
     # is removed.
-    jq < "${GPS_CONFIG_FILE_PATH}" \
+    jq < "${active_config_file_path}" \
         '. | . + .[$SCRIPT_CONFIGS_KEY][$script_name] | del(.[$SCRIPT_CONFIGS_KEY])' \
         --arg SCRIPT_CONFIGS_KEY "${SCRIPT_CONFIGS_KEY}" \
         --arg script_name "${export_script_name}"
 else
     mkdir --parents "${GPS_CONFIG_FILE_DIR_PATH}"
-    # shellcheck disable=2016
-    echo "${DEFAULT_GENCONFIGS_CONFIGS}" | envsubst '
-        ${GITHUB_USERNAME_KEY} ${GITHUB_API_TOKEN_KEY} ${SCRIPT_CONFIGS_KEY}\
-        ${UPDATE_REMOTE_FORKS} ${WEBHOSTED_GIT_ACCOUNT_URL_KEY}\
-        ${FORKED_REPOS_TO_UPSTREAM_URLS_KEY} ${DISABLE_GITHUB_ACTIONS} ${OWNER_KEY}
-    ' > "${GPS_CONFIG_FILE_PATH}"
+    # The precedence order (highest to lowest) of what becomes the
+    # active_config_file_path:
+    # 1. GPS_CONFIG_FILE_PATH env var
+    # 2. config_path option and option value to the script
+    # 3. DEFAULT_GPS_CONFIG_FILE_PATH script constant
+    #
+    # Only on the DEFAULT_GPS_CONFIG_FILE_PATH do I want genconfigs to overwrite on
+    # each invocation.
+    active_config_file_path_placement="${DEFAULT_GPS_CONFIG_FILE_PATH}"
+    
+    if [ -z "${config_path}" ]; then
+        :
+    elif ! [ -f "${config_path}" ]; then
+        echo "${PROGRAM_NAME}: file not found: (config_path, ${config_path})" >&2
+        exit 1
+    else
+        active_config_file_path_placement="${config_path}"
+    fi
+
+    if [ -z "${GPS_CONFIG_FILE_PATH}" ]; then
+        :
+    elif ! [ -f "${GPS_CONFIG_FILE_PATH}" ]; then
+        echo "${PROGRAM_NAME}: file not found: (GPS_CONFIG_FILE_PATH, ${GPS_CONFIG_FILE_PATH})" >&2
+        exit 1
+    else
+        active_config_file_path_placement="${GPS_CONFIG_FILE_PATH}"
+    fi
+
+    if [ "${active_config_file_path_placement}" = "${DEFAULT_GPS_CONFIG_FILE_PATH}" ]; then
+        # shellcheck disable=2016
+        echo "${DEFAULT_GENCONFIGS_CONFIGS}" | envsubst '
+            ${GITHUB_USERNAME_KEY} ${GITHUB_API_TOKEN_KEY} ${SCRIPT_CONFIGS_KEY}\
+            ${UPDATE_REMOTE_FORKS} ${WEBHOSTED_GIT_ACCOUNT_URL_KEY}\
+            ${FORKED_REPOS_TO_UPSTREAM_URLS_KEY} ${DISABLE_GITHUB_ACTIONS} ${REPO_NAMES_KEY}
+        ' > "${active_config_file_path_placement}"
+    fi
+    echo "${active_config_file_path_placement}" > "${GPS_ACTIVE_CONFIG_DOTFILE_PATH}"
 fi

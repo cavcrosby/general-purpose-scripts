@@ -25,6 +25,12 @@ _arg_parser = argparse.ArgumentParser(
 PAYLOAD = {"type": "all"}
 GITHUB_API_URL = "https://api.github.com/user/repos"
 
+# positional and option arg labels
+# used at the command line and to reference values of arguments
+
+STDIN_SHORT_OPTION = "s"
+STDIN_LONG_OPTION = "stdin"
+
 
 def retrieve_cmd_args():
     """Retrieve command arguments from the command line.
@@ -41,6 +47,13 @@ def retrieve_cmd_args():
 
     """
     try:
+        _arg_parser.add_argument(
+            f"-{STDIN_SHORT_OPTION}",
+            f"--{STDIN_LONG_OPTION}",
+            action="store_true",
+            help="read the gps configuration from stdin",
+        )
+
         args = vars(_arg_parser.parse_args())
         return args
     except SystemExit:
@@ -49,14 +62,17 @@ def retrieve_cmd_args():
 
 def main(args):
     """Start the main program execution."""
-    configs = json.loads(
-        subprocess.run(
-            ["genconfigs", "--export"],
-            capture_output=True,
-            encoding="utf-8",
-            check=True,
-        ).stdout.strip()
-    )
+    if args[STDIN_LONG_OPTION]:
+        configs = json.loads(sys.stdin.buffer.read().decode("utf-8").strip())
+    else:
+        configs = json.loads(
+            subprocess.run(
+                ["genconfigs", "--export"],
+                capture_output=True,
+                encoding="utf-8",
+                check=True,
+            ).stdout.strip()
+        )
     auth = pylib.githubauth.GitHubAuth(configs[keys.GITHUB_API_TOKEN_KEY])
     repos = requests.get(GITHUB_API_URL, auth=auth, params=PAYLOAD)
     repo_names_to_urls = {

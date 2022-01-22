@@ -30,7 +30,8 @@ PAYLOAD = {"type": "all"}
 # positional and option arg labels
 # used at the command line and to reference values of arguments
 
-REPO_NAME_POSITIONAL_ARG = "repo_name"
+STDIN_SHORT_OPTION = "s"
+STDIN_LONG_OPTION = "stdin"
 
 
 def retrieve_cmd_args():
@@ -49,10 +50,10 @@ def retrieve_cmd_args():
     """
     try:
         _arg_parser.add_argument(
-            f"{REPO_NAME_POSITIONAL_ARG}",
-            action="append",
-            help="represents the github repo name",
-            metavar=REPO_NAME_POSITIONAL_ARG.upper(),
+            f"-{STDIN_SHORT_OPTION}",
+            f"--{STDIN_LONG_OPTION}",
+            action="store_true",
+            help="read the gps configuration from stdin",
         )
 
         args = vars(_arg_parser.parse_args())
@@ -63,15 +64,18 @@ def retrieve_cmd_args():
 
 def main(args):
     """Start the main program execution."""
-    configs = json.loads(
-        subprocess.run(
-            ["genconfigs", "--export"],
-            capture_output=True,
-            encoding="utf-8",
-            check=True,
-        ).stdout.strip()
-    )
-    owner = configs[keys.OWNER_KEY]
+    if args[STDIN_LONG_OPTION]:
+        configs = json.loads(sys.stdin.buffer.read().decode("utf-8").strip())
+    else:
+        configs = json.loads(
+            subprocess.run(
+                ["genconfigs", "--export"],
+                capture_output=True,
+                encoding="utf-8",
+                check=True,
+            ).stdout.strip()
+        )
+    owner = configs[keys.GITHUB_USERNAME_KEY]
     workflows_url = f"https://api.github.com/repos/{owner}/{REPO_PLACEHOLDER}/actions/workflows"
     workflows_disable_url = f"https://api.github.com/repos/{owner}/{REPO_PLACEHOLDER}/actions/workflows/{WORKFLOW_ID_PLACEHOLDER}/disable"
     auth = pylib.githubauth.GitHubAuth(configs[keys.GITHUB_API_TOKEN_KEY])
@@ -81,7 +85,7 @@ def main(args):
             auth=auth,
             params=PAYLOAD,
         ).json()
-        for repo in args[REPO_NAME_POSITIONAL_ARG]
+        for repo in configs[keys.REPO_NAMES_KEY]
     }
     for repo, workflows in repos_to_workflows.items():
         if workflows["total_count"] > 0:

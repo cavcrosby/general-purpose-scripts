@@ -15,9 +15,7 @@ PYENV = pyenv
 PYTHON = python
 GENCONFIGS = genconfigs
 executables = \
-	${PIP}\
-	${PYENV}\
-	${PYTHON}
+	${PYENV}
 
 # gnu install directory variables
 prefix = ${HOME}/.local
@@ -28,15 +26,46 @@ bin_dir = ${exec_prefix}/bin
 # targets
 HELP = help
 SETUP = setup
-PYTHON_SETUP = python-setup
-SHELL_SETUP = shell-setup
 INSTALL = install
-PYTHON_INSTALL = python-install
-SHELL_INSTALL = shell-install
 UNINSTALL = uninstall
-PYTHON_UNINSTALL = python-uninstall
-SHELL_UNINSTALL = shell-uninstall
 CLEAN = clean
+
+# to be passed in at make runtime
+PROGLANG = all
+
+# determines which actions to perform on the selected set of scripts
+ifeq (${PROGLANG}, python)
+	PYTHON_SETUP=1
+else ifeq (${PROGLANG}, all)
+	PYTHON_SETUP=1
+endif
+ifeq (${PROGLANG}, shell)
+	SHELL_SETUP=1
+else ifeq (${PROGLANG}, all)
+	SHELL_SETUP=1
+endif
+
+ifeq (${PROGLANG}, python)
+	PYTHON_INSTALL=1
+else ifeq (${PROGLANG}, all)
+	PYTHON_INSTALL=1
+endif
+ifeq (${PROGLANG}, shell)
+	SHELL_INSTALL=1
+else ifeq (${PROGLANG}, all)
+	SHELL_INSTALL=1
+endif
+
+ifeq (${PROGLANG}, python)
+	PYTHON_UNINSTALL=1
+else ifeq (${PROGLANG}, all)
+	PYTHON_UNINSTALL=1
+endif
+ifeq (${PROGLANG}, shell)
+	SHELL_UNINSTALL=1
+else ifeq (${PROGLANG}, all)
+	SHELL_UNINSTALL=1
+endif
 
 # simply expanded variables
 # f ==> file
@@ -54,27 +83,24 @@ ${HELP}:
 >	@echo 'Common make targets:'
 >	@echo '  ${SETUP}              - this runs additional commands in preparation to deploy'
 >	@echo '                       scripts on the current machine'
->	@echo '  ${PYTHON_SETUP}       - creates and configures the virtualenv to be used'
->	@echo '                       by the project (required before ${INSTALL}), also'
->	@echo '                       useful for development'
->	@echo '  ${INSTALL}            - installs all scripts on the current machine'
->	@echo '  ${PYTHON_INSTALL}     - installs python scripts on the current machine'
->	@echo '  ${SHELL_INSTALL}      - installs shell scripts on the current machine'
+>	@echo '  ${INSTALL}            - installs scripts on the current machine'
 >	@echo '  ${UNINSTALL}          - removes scripts that were inserted by the ${INSTALL} target'
->	@echo '  ${PYTHON_UNINSTALL}   - removes shims that were inserted by the ${PYTHON_INSTALL}'
->	@echo '                       target and uninstalls the virtualenv'
->	@echo '  ${SHELL_UNINSTALL}    - removes links that were inserted by the ${SHELL_INSTALL}'
->	@echo '                       target'
 >	@echo '  ${CLEAN}              - removes files generated from other targets'
 >	@echo 'Common make configurations (e.g. make [config]=1 [targets]):'
->	@echo '  bin_dir                       - determines the where links are installed/uninstalled'
->	@echo '                                  from (default: ${bin_dir})'
+>	@echo '  bin_dir            - determines the where links are installed/uninstalled'
+>	@echo '                       from (default: $${HOME}/.local/bin)'
+>	@echo '  PROGLANG           - determines which set of scripts to perform on'
 
 .PHONY: ${SETUP}
-${SETUP}: ${PYTHON_SETUP} ${SHELL_SETUP}
+${SETUP}:
+>	mkdir --parents "${bin_dir}"
 
-.PHONY: ${PYTHON_SETUP}
-${PYTHON_SETUP}:
+	# installs the genconfigs program and initializes it
+>	ln --symbolic --force "${CURDIR}/${GENCONFIGS}" "${bin_dir}/${GENCONFIGS}"
+>	${CURDIR}/${GENCONFIGS}
+>	chmod 600 "$$(${CURDIR}/${GENCONFIGS} --show-path)"
+
+ifdef PYTHON_SETUP
 >	@${PYENV} versions | grep --quiet '${VIRTUALENV_PYTHON_VERSION}$$' || { echo "make: python \"${VIRTUALENV_PYTHON_VERSION}\" is not installed by pyenv"; exit 1; }
 >	${PYENV} virtualenv "${VIRTUALENV_PYTHON_VERSION}" "${python_virtualenv_name}"
 
@@ -91,14 +117,20 @@ ${PYTHON_SETUP}:
 	# https://stackoverflow.com/questions/69836936/poetry-attributeerror-link-object-has-no-attribute-name#answer-69987715
 >	${PYTHON} -m ${PIP} install poetry-core==1.0.4
 
+	# Needed to make sure poetry doesn't panic and create a virtualenv, redirecting
+	# dependencies into the wrong virtualenv.
+>	${PYENV} exec ${POETRY} config virtualenvs.create false
+
 	# --no-root because we only want to install dependencies. 'pyenv exec' is needed
 	# as poetry is installed into a virtualenv bin dir that is not added to the
 	# current shell PATH.
 >	${PYENV} exec ${POETRY} install --no-root || { echo "${POETRY} failed to install project dependencies"; exit 1; }
 >	unset PYENV_VERSION
+endif
 
-.PHONY: ${SHELL_SETUP}
-${SHELL_SETUP}: ;
+ifdef SHELL_SETUP
+>	:
+endif
 
 # .ONESHELL is needed to ensure all the commands below run in one shell session.
 # Also, DO NOT quote the *_scripts variables! This seems to cause the shell not
@@ -106,10 +138,8 @@ ${SHELL_SETUP}: ;
 # any of the scripts contain a space or another IFS character.
 .ONESHELL:
 .PHONY: ${INSTALL}
-${INSTALL}: ${PYTHON_INSTALL} ${SHELL_INSTALL}
-
-.PHONY: ${PYTHON_INSTALL}
-${PYTHON_INSTALL}:
+${INSTALL}:
+ifdef PYTHON_INSTALL
 >	@for pyscript_path in ${python_scripts}; do \
 >		pyscript="$$(basename "$${pyscript_path}")"
 >		@echo "cat shim ${bin_dir}/$${pyscript}"
@@ -120,7 +150,12 @@ ${PYTHON_INSTALL}:
 >		# PYENV_VERSION allows the program to run in the python_virtualenv_name without doing
 >		# additional shell setup. pyenv will still process the program name through an
 >		# appropriately (same) named shim but this will ultimately still call this shim.
+>		
+>		set -e
+>
 >		export PYENV_VERSION="${python_virtualenv_name}"
+>		PATH="$${PYENV_ROOT}/plugins/pyenv-virtualenv/shims:$${PYENV_ROOT}/shims:$${PYENV_ROOT}/bin:$${PATH}"
+>		export PATH
 >		"$${pyscript_path}" "\$$@"
 >		unset PYENV_VERSION
 >	
@@ -128,42 +163,34 @@ ${PYTHON_INSTALL}:
 >
 >		chmod 755 "${bin_dir}/$${pyscript}"
 >	done
+endif
 
-.PHONY: ${SHELL_INSTALL}
-${SHELL_INSTALL}:
+ifdef SHELL_INSTALL
 >	@for shscript_path in ${shell_scripts}; do \
 >		shscript="$$(basename "$${shscript_path}")"; \
 >		echo ln --symbolic --force "$${shscript_path}" "${bin_dir}/$${shscript}"; \
 >		ln --symbolic --force "$${shscript_path}" "${bin_dir}/$${shscript}"; \
 >	done
-
-	# installs the genconfigs program and initializes it
->	echo ln --symbolic --force "${CURDIR}/${GENCONFIGS}" "${bin_dir}/${GENCONFIGS}"; \
->	ln --symbolic --force "${CURDIR}/${GENCONFIGS}" "${bin_dir}/${GENCONFIGS}"; \
->	echo ${CURDIR}/${GENCONFIGS}
->	${CURDIR}/${GENCONFIGS}
->	echo chmod 600 "$$(${CURDIR}/${GENCONFIGS} --show-path)"
->	chmod 600 "$$(${CURDIR}/${GENCONFIGS} --show-path)"
+endif
 
 .PHONY: ${UNINSTALL}
-${UNINSTALL}: ${PYTHON_UNINSTALL} ${SHELL_UNINSTALL}
-
-.PHONY: ${PYTHON_UNINSTALL}
-${PYTHON_UNINSTALL}:
+${UNINSTALL}:
+ifdef PYTHON_UNINSTALL
 >	@for pyscript_path in ${python_scripts}; do \
 >		pyscript="$$(basename "$${pyscript_path}")"; \
 >		echo rm --force "$${pyscript_path}" "${bin_dir}/$${pyscript}"; \
 >		rm --force "${bin_dir}/$${pyscript}"; \
 >	done
 >	${PYENV} uninstall --force "${python_virtualenv_name}"
+endif
 
-.PHONY: ${SHELL_UNINSTALL}
-${SHELL_UNINSTALL}:
+ifdef SHELL_UNINSTALL
 >	@for shscript_path in ${shell_scripts}; do \
 >		shscript="$$(basename "$${shscript_path}")"; \
 >		echo rm --force "$${shscript_path}" "${bin_dir}/$${shscript}"; \
 >		rm --force "${bin_dir}/$${shscript}"; \
 >	done
+endif
 
 .PHONY: ${CLEAN}
 ${CLEAN}:

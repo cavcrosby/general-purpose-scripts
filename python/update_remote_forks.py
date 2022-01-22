@@ -30,6 +30,8 @@ REMOTE_NAME = "forked-repo"
 # positional and option arg labels
 # used at the command line and to reference values of arguments
 
+STDIN_SHORT_OPTION = "s"
+STDIN_LONG_OPTION = "stdin"
 VERBOSE_SHORT_OPTION = "v"
 VERBOSE_LONG_OPTION = "verbose"
 
@@ -55,6 +57,12 @@ def retrieve_cmd_args():
             action="store_true",
             help="increase verbosity",
         )
+        _arg_parser.add_argument(
+            f"-{STDIN_SHORT_OPTION}",
+            f"--{STDIN_LONG_OPTION}",
+            action="store_true",
+            help="read the gps configuration from stdin",
+        )
 
         args = vars(_arg_parser.parse_args())
         return args
@@ -64,14 +72,17 @@ def retrieve_cmd_args():
 
 def main(args):
     """Start the main program execution."""
-    configs = json.loads(
-        subprocess.run(
-            ["genconfigs", "--export"],
-            capture_output=True,
-            encoding="utf-8",
-            check=True,
-        ).stdout.strip()
-    )
+    if args[STDIN_LONG_OPTION]:
+        configs = json.loads(sys.stdin.buffer.read().decode("utf-8").strip())
+    else:
+        configs = json.loads(
+            subprocess.run(
+                ["genconfigs", "--export"],
+                capture_output=True,
+                encoding="utf-8",
+                check=True,
+            ).stdout.strip()
+        )
     webhosted_git_account_url = configs[keys.WEBHOSTED_GIT_ACCOUNT_URL_KEY]
     forked_repo_to_upstream_urls = configs[
         keys.FORKED_REPOS_TO_UPSTREAM_URLS_KEY
@@ -124,11 +135,6 @@ def main(args):
         )
         subprocess.run(
             git_push_cmd + ("--tags", REMOTE_NAME),
-            encoding="utf-8",
-            check=True,
-        )
-        subprocess.run(
-            ("disable_github_actions.py", forked_repo),
             encoding="utf-8",
             check=True,
         )
