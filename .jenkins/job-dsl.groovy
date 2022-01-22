@@ -29,6 +29,7 @@ pipelineJob ('general-purpose-scripts') {
     properties {
         pipelineTriggers{
             triggers {
+                // TODO(cavcrosby): figure out the desired cron schedule.
                 pollSCM{
                     scmpoll_spec('H/5 * * * *')
                 }
