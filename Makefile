@@ -1,34 +1,8 @@
-# special makefile variables
-.DEFAULT_GOAL := help
-.RECIPEPREFIX := >
+include base.mk
 
 # recursive variables
-SHELL = /usr/bin/sh
 python_scripts_dir_path = ${CURDIR}/python
 shell_scripts_dir_path = ${CURDIR}/shell
-VIRTUALENV_PYTHON_VERSION = 3.9.5
-
-# executables
-POETRY = poetry
-PIP = pip
-PYENV = pyenv
-PYTHON = python
-GENCONFIGS = genconfigs
-executables = \
-	${PYENV}
-
-# gnu install directory variables
-prefix = ${HOME}/.local
-exec_prefix = ${prefix}
-# where to add link names that point to repo scripts
-bin_dir = ${exec_prefix}/bin
-
-# targets
-HELP = help
-SETUP = setup
-INSTALL = install
-UNINSTALL = uninstall
-CLEAN = clean
 
 # to be passed in at make runtime
 PROGLANG = all
@@ -67,11 +41,20 @@ else ifeq (${PROGLANG}, all)
 	SHELL_UNINSTALL=1
 endif
 
+# include other generic makefiles
+include python.mk
+# overrides defaults set by included makefiles
+VIRTUALENV_PYTHON_VERSION = 3.9.5
+
+# executables
+GENCONFIGS = genconfigs
+
 # simply expanded variables
 # f ==> file
 python_scripts := $(shell find ${python_scripts_dir_path} \( -type f \) -and \( -not -iname *.pyc \) -and \( -not -iname keys.py \))
 shell_scripts := $(shell find ${shell_scripts_dir_path} -type f)
-python_virtualenv_name := $(shell basename ${CURDIR})
+override executables := \
+	${python_executables}
 
 # inspired from:
 # https://stackoverflow.com/questions/5618615/check-if-a-program-exists-from-a-makefile#answer-25668869
@@ -101,31 +84,7 @@ ${SETUP}:
 >	chmod 600 "$$(${CURDIR}/${GENCONFIGS} --show-path)"
 
 ifdef PYTHON_SETUP
->	@${PYENV} versions | grep --quiet '${VIRTUALENV_PYTHON_VERSION}$$' || { echo "make: python \"${VIRTUALENV_PYTHON_VERSION}\" is not installed by pyenv"; exit 1; }
->	${PYENV} virtualenv "${VIRTUALENV_PYTHON_VERSION}" "${python_virtualenv_name}"
-
-	# mainly used to enter the virtualenv when in the repo
->	${PYENV} local "${python_virtualenv_name}"
->	export PYENV_VERSION="${python_virtualenv_name}"
-
-	# to ensure the most current versions of dependencies can be installed
->	${PYTHON} -m ${PIP} install --upgrade ${PIP}
->	${PYTHON} -m ${PIP} install ${POETRY}==1.1.7
-
-	# MONITOR(cavcrosby): temporary workaround due to poetry now breaking on some
-	# package installs. For reference:
-	# https://stackoverflow.com/questions/69836936/poetry-attributeerror-link-object-has-no-attribute-name#answer-69987715
->	${PYTHON} -m ${PIP} install poetry-core==1.0.4
-
-	# Needed to make sure poetry doesn't panic and create a virtualenv, redirecting
-	# dependencies into the wrong virtualenv.
->	${PYENV} exec ${POETRY} config virtualenvs.create false
-
-	# --no-root because we only want to install dependencies. 'pyenv exec' is needed
-	# as poetry is installed into a virtualenv bin dir that is not added to the
-	# current shell PATH.
->	${PYENV} exec ${POETRY} install --no-root || { echo "${POETRY} failed to install project dependencies"; exit 1; }
->	unset PYENV_VERSION
+>	${MAKE} ${PYENV_POETRY_SETUP}
 endif
 
 ifdef SHELL_SETUP
