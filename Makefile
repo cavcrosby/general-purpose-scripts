@@ -45,6 +45,7 @@ endif
 include python.mk
 # overrides defaults set by included makefiles
 VIRTUALENV_PYTHON_VERSION = 3.9.5
+PYTHON_VIRTUALENV_NAME = $(shell basename ${CURDIR})
 
 # executables
 GENCONFIGS = genconfigs
@@ -109,13 +110,13 @@ ifdef PYTHON_INSTALL
 >		#!/bin/bash
 >		#
 >		# Small shim that calls the program below in the proper python virtualenv.
->		# PYENV_VERSION allows the program to run in the python_virtualenv_name without doing
+>		# PYENV_VERSION allows the program to run in the PYTHON_VIRTUALENV_NAME without doing
 >		# additional shell setup. pyenv will still process the program name through an
 >		# appropriately (same) named shim but this will ultimately still call this shim.
 >		
 >		set -e
 >
->		export PYENV_VERSION="${python_virtualenv_name}"
+>		export PYENV_VERSION="${PYTHON_VIRTUALENV_NAME}"
 >		PATH="$${PYENV_ROOT}/plugins/pyenv-virtualenv/shims:$${PYENV_ROOT}/shims:$${PYENV_ROOT}/bin:$${PATH}"
 >		export PATH
 >		"$${pyscript_path}" "\$$@"
@@ -143,7 +144,7 @@ ifdef PYTHON_UNINSTALL
 >		echo rm --force "$${pyscript_path}" "${bin_dir}/$${pyscript}"; \
 >		rm --force "${bin_dir}/$${pyscript}"; \
 >	done
->	${PYENV} uninstall --force "${python_virtualenv_name}"
+>	${PYENV} uninstall --force "${PYTHON_VIRTUALENV_NAME}"
 endif
 
 ifdef SHELL_UNINSTALL
