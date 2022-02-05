@@ -51,7 +51,6 @@ PYTHON_VIRTUALENV_NAME = $(shell basename ${CURDIR})
 GENCONFIGS = genconfigs
 
 # simply expanded variables
-# f ==> file
 python_scripts := $(shell find ${python_scripts_dir_path} \( -type f \) \
 	-and \( -not -iname *.pyc \) \
 	-and \( -not -iname keys.py \) \
