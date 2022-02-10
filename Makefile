@@ -56,7 +56,7 @@ python_scripts := $(shell find ${python_scripts_dir_path} \( -type f \) \
 	-and \( -not -iname keys.py \) \
 )
 shell_scripts := $(shell find ${shell_scripts_dir_path} -type f)
-override executables := \
+executables := \
 	${python_executables}
 
 # inspired from:
