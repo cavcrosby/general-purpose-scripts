@@ -22,7 +22,7 @@ _arg_parser = argparse.ArgumentParser(
     allow_abbrev=False,
 )
 
-PAYLOAD = {"type": "all"}
+PAYLOAD = {"type": "all", "per_page": 100}
 GITHUB_API_URL = "https://api.github.com/user/repos"
 
 # positional and option arg labels
@@ -76,7 +76,9 @@ def main(args):
     auth = pylib.githubauth.GitHubAuth(configs[keys.GITHUB_API_TOKEN_KEY])
     repos = requests.get(GITHUB_API_URL, auth=auth, params=PAYLOAD)
     repo_names_to_urls = {
-        repo["name"]: repo["html_url"] for repo in repos.json()
+        repo["name"]: repo["html_url"]
+        for repo in repos.json()
+        if not repo["fork"] and not repo["archived"]
     }
     for repo_name in repo_names_to_urls:
         subprocess.run(
