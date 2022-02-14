@@ -34,6 +34,9 @@ pipelineJob ('general-purpose-scripts') {
                 }
                 parameterizedCron {
                     // hour field assumes time zone is UTC
+                    //
+                    // Also, the spacing is retained when viewing the parameterized cron jobs
+                    // through Jenkins. Not pretty to look at but I am ok with this.
                     parameterizedSpecification('''
                         H(0-5) 8 * * * % SCRIPT_NAME=update_remote_forks.py; SCRIPT_ARGS=--stdin --verbose; PIPELINE_MODE=run; PROGLANG=python;
                         H(15-20) 8 * * * % SCRIPT_NAME=disable_github_actions.py; SCRIPT_ARGS=--stdin; PIPELINE_MODE=run; PROGLANG=python;
