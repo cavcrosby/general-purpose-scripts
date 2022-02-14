@@ -42,9 +42,8 @@ pipeline {
 
     post {
         failure {
-            // TODO(cavcrosby): this needs to be tested once I can get the emailext and instance
-            // configurations sorted.
-            emailext body: 'Check console output at ${BUILD_URL} to view the results. \n\n ${CHANGES} \n\n -------------------------------------------------- \n${BUILD_LOG, maxLines=100, escapeHtml=false}',
+            emailext body: 'Check console output at ${BUILD_URL} to view the results. \n\n ${CHANGES} \n -------------------------------------------------- \n${BUILD_LOG, maxLines=100, escapeHtml=false}',
+                     from: "Jenkins Build Notifications <" + (System.getenv('JENKINS_ADMIN_EMAIL') ?: "") + ">",
                      to: System.getenv('JENKINS_ADMIN_EMAIL') ?: "",
                      subject: "Build failed in Jenkins: ${JOB_NAME} - #${BUILD_NUMBER}"
         }
