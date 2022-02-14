@@ -29,12 +29,15 @@ pipelineJob ('general-purpose-scripts') {
     properties {
         pipelineTriggers{
             triggers {
-                // TODO(cavcrosby): figure out the desired cron schedule.
                 pollSCM{
                     scmpoll_spec('H/5 * * * *')
                 }
-                parameterizedCron { 
-                    parameterizedSpecification('''''')
+                parameterizedCron {
+                    // hour field assumes time zone is UTC
+                    parameterizedSpecification('''
+                        H(0-5) 8 * * * % SCRIPT_NAME=update_remote_forks.py; SCRIPT_ARGS=--stdin --verbose; PIPELINE_MODE=run; PROGLANG=python;
+                        H(15-20) 8 * * * % SCRIPT_NAME=disable_github_actions.py; SCRIPT_ARGS=--stdin; PIPELINE_MODE=run; PROGLANG=python;
+                    ''')
                 }
             }
         }
