@@ -46,18 +46,15 @@ def retrieve_cmd_args():
         If user input is not considered valid when parsing arguments.
 
     """
-    try:
-        _arg_parser.add_argument(
-            f"-{STDIN_SHORT_OPTION}",
-            f"--{STDIN_LONG_OPTION}",
-            action="store_true",
-            help="read the gps configuration from stdin",
-        )
+    _arg_parser.add_argument(
+        f"-{STDIN_SHORT_OPTION}",
+        f"--{STDIN_LONG_OPTION}",
+        action="store_true",
+        help="read the gps configuration from stdin",
+    )
 
-        args = vars(_arg_parser.parse_args())
-        return args
-    except SystemExit:
-        sys.exit(1)
+    args = vars(_arg_parser.parse_args())
+    return args
 
 
 def main(args):

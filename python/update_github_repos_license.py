@@ -135,35 +135,31 @@ def retrieve_cmd_args():
         If user input is not considered valid when parsing arguments.
 
     """
-    try:
-        _arg_parser.add_argument(
-            f"{LICENSE_POSITIONAL_ARG}",
-            action="append",
-            choices=[str(License.MIT)],
-            help="the license to update for each repo",
-            metavar=LICENSE_POSITIONAL_ARG.upper(),
-        )
+    _arg_parser.add_argument(
+        f"{LICENSE_POSITIONAL_ARG}",
+        action="append",
+        choices=[str(License.MIT)],
+        help="the license to update for each repo",
+        metavar=LICENSE_POSITIONAL_ARG.upper(),
+    )
 
-        args = vars(_arg_parser.parse_args())
-        # Type conversions occur before checking inclusion in choices,
-        # meaning any conversion will need to occur after parsing args.
-        # For reference:
-        # https://stackoverflow.com/questions/36479850/python-argparse-check-choices-before-type
-        args[LICENSE_POSITIONAL_ARG] = [
-            _arg_license_conv(license)
-            for license in args[LICENSE_POSITIONAL_ARG]
-        ]
+    args = vars(_arg_parser.parse_args())
+    # Type conversions occur before checking inclusion in choices,
+    # meaning any conversion will need to occur after parsing args.
+    # For reference:
+    # https://stackoverflow.com/questions/36479850/python-argparse-check-choices-before-type
+    args[LICENSE_POSITIONAL_ARG] = [
+        _arg_license_conv(license) for license in args[LICENSE_POSITIONAL_ARG]
+    ]
 
-        _arg_parser.add_argument(
-            f"-{STDIN_SHORT_OPTION}",
-            f"--{STDIN_LONG_OPTION}",
-            action="store_true",
-            help="read the gps configuration from stdin",
-        )
+    _arg_parser.add_argument(
+        f"-{STDIN_SHORT_OPTION}",
+        f"--{STDIN_LONG_OPTION}",
+        action="store_true",
+        help="read the gps configuration from stdin",
+    )
 
-        return args
-    except SystemExit:
-        sys.exit(1)
+    return args
 
 
 def main(args):
