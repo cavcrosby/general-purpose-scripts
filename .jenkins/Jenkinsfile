@@ -35,7 +35,7 @@ pipeline {
                 }
             }
             steps {
-                sh './bin/${SCRIPT_NAME} ${SCRIPT_ARGS} <<< "$(./bin/genconfigs -e ${SCRIPT_NAME})"'
+                sh './bin/${SCRIPT_NAME} ${SCRIPT_ARGS} <<< "$(./bin/genconfigs --export ${SCRIPT_NAME})"'
             }
         }
     }
