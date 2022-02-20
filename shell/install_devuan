@@ -1,0 +1,89 @@
+#!/bin/bash
+#
+# Mirrors the Debian Vagrant guest capabilities for Devuan.
+
+set -e
+
+# constants and defined cli parameters
+PROGRAM_NAME="$(basename "$0")"
+readonly PROGRAM_NAME
+readonly FALSE=0
+readonly TRUE=1
+readonly HELP_SHORT_OPT="h"
+readonly HELP_LONG_OPT="help"
+# combining all short opts to form shortopts for getopt
+readonly short_opts="${HELP_SHORT_OPT}"
+
+help_option="${FALSE}"
+# do not combine long opts into their own variable
+eval set -- "$(getopt --options "${short_opts}" --long "${HELP_LONG_OPT}" --name "${PROGRAM_NAME}" -- "$@")"
+
+# determine behavior of program from cli arguments
+while true; do
+    case "$1" in
+        "-${HELP_SHORT_OPT}" | "--${HELP_LONG_OPT}")    help_option="${TRUE}"; shift ;;
+        "--")                                           shift; break ;;
+        *)                                              break ;;
+    esac
+done
+
+if (( help_option )); then
+        cat << _EOF_
+Usage: ${PROGRAM_NAME} [-${HELP_SHORT_OPT}]
+
+Mirrors the Debian Vagrant guest capabilities for Devuan.
+
+Options:
+    -${HELP_SHORT_OPT}, --${HELP_LONG_OPT}      show this help message and exit
+
+_EOF_
+    exit 0
+fi
+
+ROOT_UID=0
+if [ "$(id --user)" != "${ROOT_UID}" ]; then
+    echo "${PROGRAM_NAME}: you must run this as root" >&2
+    exit 1
+fi
+
+if [ -z "$(command -v gem)" ]; then
+	echo "${PROGRAM_NAME}: gem cannot be found in the PATH!" >&2
+	exit 1
+fi
+
+vagrant_gem_path="$(gem which vagrant)"
+vagrant_gem_dir_path="$(dirname "${vagrant_gem_path}")"
+if [ -z "${vagrant_gem_dir_path}" ]; then
+    echo "${PROGRAM_NAME}: is vagrant installed? Could not find it's associated gem" >&2
+	exit 1
+fi
+
+found=0
+while ! (( found )); do
+    end_node="$(basename "${vagrant_gem_dir_path}")"
+    if echo "${end_node}" | grep --quiet "vagrant"; then
+        found=1
+    elif [ "${vagrant_gem_dir_path}" = "/" ]; then
+        echo "${PROGRAM_NAME}: could not determine the Vagrant gem directory" >&2
+	    exit 1
+    else
+        vagrant_gem_dir_path="$(dirname "${vagrant_gem_dir_path}")"
+    fi
+done
+
+devuan_guest_dir_path="${vagrant_gem_dir_path}/plugins/guests/devuan"
+rm --force --recursive "${devuan_guest_dir_path}"
+cp --recursive "${vagrant_gem_dir_path}/plugins/guests/debian" "${devuan_guest_dir_path}"
+# While each character could be of a different case (e.g. a, A), I anticipate a
+# reasonable finite number of sencarios to replace "Debian" with. Hence just
+# passing a discrete number of expressions to replace.
+#
+# inspired by:
+# https://unix.stackexchange.com/questions/125694/case-matching-pattern-replacement-with-sed#answer-125695
+find "${devuan_guest_dir_path}" \( -type f \) -and \( -name '*.rb' \) \
+    -execdir sed --in-place \
+        --expression 's/debian/devuan/g' \
+        --expression 's/Debian/Devuan/g' \
+        '{}' ';'
+
+exit 0
