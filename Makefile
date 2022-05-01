@@ -86,11 +86,11 @@ ${SETUP}:
 >	${CURDIR}/${GENCONFIGS}
 >	chmod 600 "$$(${CURDIR}/${GENCONFIGS} --show-path)"
 
-ifdef PYTHON_SETUP
+ifneq ($(findstring ${PYTHON_SETUP},${TRUTHY_VALUES}),)
 >	${MAKE} ${PYENV_POETRY_SETUP}
 endif
 
-ifdef SHELL_SETUP
+ifneq ($(findstring ${SHELL_SETUP},${TRUTHY_VALUES}),)
 >	:
 endif
 
@@ -101,7 +101,7 @@ endif
 .ONESHELL:
 .PHONY: ${INSTALL}
 ${INSTALL}:
-ifdef PYTHON_INSTALL
+ifneq ($(findstring ${PYTHON_INSTALL},${TRUTHY_VALUES}),)
 >	@for pyscript_path in ${python_scripts}; do \
 >		pyscript="$$(basename "$${pyscript_path}")"
 >		@echo "cat shim ${bin_dir}/$${pyscript}"
@@ -127,7 +127,7 @@ ifdef PYTHON_INSTALL
 >	done
 endif
 
-ifdef SHELL_INSTALL
+ifneq ($(findstring ${SHELL_INSTALL},${TRUTHY_VALUES}),)
 >	@for shscript_path in ${shell_scripts}; do \
 >		shscript="$$(basename "$${shscript_path}")"; \
 >		echo ln --symbolic --force "$${shscript_path}" "${bin_dir}/$${shscript}"; \
@@ -137,7 +137,7 @@ endif
 
 .PHONY: ${UNINSTALL}
 ${UNINSTALL}:
-ifdef PYTHON_UNINSTALL
+ifneq ($(findstring ${PYTHON_UNINSTALL},${TRUTHY_VALUES}),)
 >	@for pyscript_path in ${python_scripts}; do \
 >		pyscript="$$(basename "$${pyscript_path}")"; \
 >		echo rm --force "$${pyscript_path}" "${bin_dir}/$${pyscript}"; \
@@ -146,7 +146,7 @@ ifdef PYTHON_UNINSTALL
 >	${PYENV} uninstall --force "${PYTHON_VIRTUALENV_NAME}"
 endif
 
-ifdef SHELL_UNINSTALL
+ifneq ($(findstring ${SHELL_UNINSTALL},${TRUTHY_VALUES}),)
 >	@for shscript_path in ${shell_scripts}; do \
 >		shscript="$$(basename "$${shscript_path}")"; \
 >		echo rm --force "$${shscript_path}" "${bin_dir}/$${shscript}"; \
