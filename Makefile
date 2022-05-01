@@ -8,36 +8,36 @@ shell_scripts_dir_path = ${CURDIR}/shell
 PROGLANG = all
 
 # determines which actions to perform on the selected set of scripts
-ifeq (${PROGLANG}, python)
+ifeq (${PROGLANG},python)
 	PYTHON_SETUP=1
-else ifeq (${PROGLANG}, all)
+else ifeq (${PROGLANG},all)
 	PYTHON_SETUP=1
 endif
-ifeq (${PROGLANG}, shell)
+ifeq (${PROGLANG},shell)
 	SHELL_SETUP=1
-else ifeq (${PROGLANG}, all)
+else ifeq (${PROGLANG},all)
 	SHELL_SETUP=1
 endif
 
-ifeq (${PROGLANG}, python)
+ifeq (${PROGLANG},python)
 	PYTHON_INSTALL=1
-else ifeq (${PROGLANG}, all)
+else ifeq (${PROGLANG},all)
 	PYTHON_INSTALL=1
 endif
-ifeq (${PROGLANG}, shell)
+ifeq (${PROGLANG},shell)
 	SHELL_INSTALL=1
-else ifeq (${PROGLANG}, all)
+else ifeq (${PROGLANG},all)
 	SHELL_INSTALL=1
 endif
 
-ifeq (${PROGLANG}, python)
+ifeq (${PROGLANG},python)
 	PYTHON_UNINSTALL=1
-else ifeq (${PROGLANG}, all)
+else ifeq (${PROGLANG},all)
 	PYTHON_UNINSTALL=1
 endif
-ifeq (${PROGLANG}, shell)
+ifeq (${PROGLANG},shell)
 	SHELL_UNINSTALL=1
-else ifeq (${PROGLANG}, all)
+else ifeq (${PROGLANG},all)
 	SHELL_UNINSTALL=1
 endif
 
