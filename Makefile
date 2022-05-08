@@ -1,6 +1,6 @@
 include base.mk
 
-# recursive variables
+# recursively expanded variables
 python_scripts_dir_path = ${CURDIR}/python
 shell_scripts_dir_path = ${CURDIR}/shell
 
