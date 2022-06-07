@@ -11,11 +11,11 @@ import subprocess
 import sys
 
 # Third Party Imports
+import pylib
 import requests
 
 # Local Application Imports
 import keys
-import pylib
 
 # constants and other program configurations
 _TEMP_DIR = os.path.basename(f"{os.path.abspath(__file__)}-temp")

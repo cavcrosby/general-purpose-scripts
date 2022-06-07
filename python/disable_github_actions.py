@@ -7,11 +7,11 @@ import subprocess
 import sys
 
 # Third Party Imports
+import pylib
 import requests
 
 # Local Application Imports
 import keys
-import pylib
 
 
 # constants and other program configurations
