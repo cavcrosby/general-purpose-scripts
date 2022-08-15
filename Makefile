@@ -4,6 +4,9 @@ include base.mk
 python_scripts_dir_path = ${CURDIR}/python
 shell_scripts_dir_path = ${CURDIR}/shell
 
+# targets
+RENDER = render
+
 # to be passed in at make runtime
 PROGLANG = all
 
@@ -69,6 +72,7 @@ ${HELP}:
 >	@echo 'Common make targets:'
 >	@echo '  ${SETUP}              - this runs additional commands in preparation to deploy'
 >	@echo '                       scripts on the current machine'
+>	@echo '  ${RENDER}             - generate files derived from templates'
 >	@echo '  ${INSTALL}            - installs scripts on the current machine'
 >	@echo '  ${UNINSTALL}          - removes scripts that were inserted by the ${INSTALL} target'
 >	@echo '  ${CLEAN}              - removes files generated from other targets'
@@ -93,6 +97,10 @@ endif
 ifneq ($(findstring ${SHELL_SETUP},${TRUTHY_VALUES}),)
 >	:
 endif
+
+.PHONY: ${RENDER}
+${RENDER}:
+>	${PYTHON} ./utils/renderj2_tpls.py
 
 # .ONESHELL is needed to ensure all the commands below run in one shell session.
 # Also, DO NOT quote the *_scripts variables! This seems to cause the shell not

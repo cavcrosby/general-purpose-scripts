@@ -1,3 +1,42 @@
+pipelineJob ('gps-container-images') {
+    
+    logRotator {
+        numToKeep(5)
+    }
+
+    parameters {
+        stringParam('PROGLANG', 'python', 'The programming language that a container image is prepared for.')
+    }
+
+    definition {
+        cpsScm {
+            scm {
+                git {
+                    branch('main')
+                    remote {
+                        credentials(System.getenv('JENKINS_GITHUB_CREDENTIAL_ID') ?: '')
+                        url('https://github.com/cavcrosby/general-purpose-scripts')
+                    }
+                }
+            }
+            scriptPath('./.jenkins/gps-container-images.Jenkinsfile')
+        }
+    }
+
+    properties {
+        pipelineTriggers {
+            triggers {
+                parameterizedCron {
+                    parameterizedSpecification('''
+                        H(0-10) 5 */2 * * % PROGLANG=python;
+                        H(20-30) 5 */2 * * % PROGLANG=shell;
+                    ''')
+                }
+            }
+        }
+    }
+}
+
 pipelineJob ('general-purpose-scripts') {
     
     logRotator {
@@ -22,7 +61,7 @@ pipelineJob ('general-purpose-scripts') {
                     }
                 }
             }
-            scriptPath('.jenkins/Jenkinsfile')
+            scriptPath('./.jenkins/general-purpose-scripts.Jenkinsfile')
         }
     }
 
