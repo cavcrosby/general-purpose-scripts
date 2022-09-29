@@ -47,7 +47,6 @@ endif
 # include other generic makefiles
 include python.mk
 # overrides defaults set by included makefiles
-VIRTUALENV_PYTHON_VERSION = 3.9.5
 PYTHON_VIRTUALENV_NAME = $(shell basename ${CURDIR})
 
 # executables
