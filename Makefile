@@ -12,36 +12,36 @@ PROGLANG = all
 
 # determines which actions to perform on the selected set of scripts
 ifeq (${PROGLANG},python)
-	PYTHON_SETUP=1
+	PYTHON_SETUP=true
 else ifeq (${PROGLANG},all)
-	PYTHON_SETUP=1
+	PYTHON_SETUP=true
 endif
 ifeq (${PROGLANG},shell)
-	SHELL_SETUP=1
+	SHELL_SETUP=true
 else ifeq (${PROGLANG},all)
-	SHELL_SETUP=1
+	SHELL_SETUP=true
 endif
 
 ifeq (${PROGLANG},python)
-	PYTHON_INSTALL=1
+	PYTHON_INSTALL=true
 else ifeq (${PROGLANG},all)
-	PYTHON_INSTALL=1
+	PYTHON_INSTALL=true
 endif
 ifeq (${PROGLANG},shell)
-	SHELL_INSTALL=1
+	SHELL_INSTALL=true
 else ifeq (${PROGLANG},all)
-	SHELL_INSTALL=1
+	SHELL_INSTALL=true
 endif
 
 ifeq (${PROGLANG},python)
-	PYTHON_UNINSTALL=1
+	PYTHON_UNINSTALL=true
 else ifeq (${PROGLANG},all)
-	PYTHON_UNINSTALL=1
+	PYTHON_UNINSTALL=true
 endif
 ifeq (${PROGLANG},shell)
-	SHELL_UNINSTALL=1
+	SHELL_UNINSTALL=true
 else ifeq (${PROGLANG},all)
-	SHELL_UNINSTALL=1
+	SHELL_UNINSTALL=true
 endif
 
 # include other generic makefiles
