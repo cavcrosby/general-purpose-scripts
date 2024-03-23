@@ -1,21 +1,12 @@
-[tool.poetry]
+[project]
 name = "gps-cavcrosby"
 version = "1.0.0"
 description = "Scripts that I use on a daily basis or find useful"
-authors = ["Conner Crosby <conner@cavcrosby.tech>"]
-license = "MIT"
+requires-python = ">=3.9,<3.10"
 
-[tool.poetry.dependencies]
-python = "~3.9"
-pylib-cavcrosby = {git = "https://github.com/cavcrosby/pylib.git", branch = "main"}
-requests = "^2.25.1"
+[[authors]]
+name = "Conner Crosby"
+email = "cavcrosby@gmail.com"
 
-[tool.poetry.dev-dependencies]
-flake8 = "^3.9.2"
-black = "^21.6b0"
-flake8-docstrings = "^1.6.0"
-Jinja2 = "^3.1.2"
-
-[build-system]
-requires = ["poetry-core>=1.0.0"]
-build-backend = "poetry.core.masonry.api"
+[license]
+file = "./LICENSE"

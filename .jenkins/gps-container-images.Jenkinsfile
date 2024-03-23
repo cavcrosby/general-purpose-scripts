@@ -49,24 +49,6 @@ pipeline {
         }
       }
     }
-
-    stage('Build (shell)') {
-      when {
-        expression {
-          "${params.PROGLANG}".toLowerCase() == "shell"
-        }
-      }
-      steps {
-        container(name: 'kaniko') {
-          sh '''#!/bin/sh
-            /kaniko/executor \
-              --context "${PWD}" \
-              --dockerfile "./dockerfiles/gps-shell.Dockerfile" \
-              --destination "cavcrosby/gps-shell:latest"
-          '''
-        }
-      }
-    }
   }
 
   post {

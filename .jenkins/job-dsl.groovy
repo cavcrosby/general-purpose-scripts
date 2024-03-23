@@ -29,7 +29,6 @@ pipelineJob ('gps-container-images') {
                 parameterizedCron {
                     parameterizedSpecification('''
                         H(0-10) 5 */2 * * % PROGLANG=python;
-                        H(20-30) 5 */2 * * % PROGLANG=shell;
                     ''')
                 }
             }
@@ -44,9 +43,8 @@ pipelineJob ('general-purpose-scripts') {
     }
 
     parameters {
-        stringParam('SCRIPT_NAME', 'fetch_github_repos.py', 'The name of the script to run.')
+        stringParam('SCRIPT_NAME', 'update_github_forks.py', 'The name of the script to run.')
         stringParam('SCRIPT_ARGS', '-h', 'The arguments to append to the script, should be a space separated character string (e.g. "--foo bar baz").')
-        stringParam('PIPELINE_MODE', 'test', 'The "mode" in which this particular pipeline should run in.')
         stringParam('PROGLANG', 'python', 'The programming language the script was written in.')
     }
 
@@ -77,8 +75,8 @@ pipelineJob ('general-purpose-scripts') {
                     // Also, the spacing is retained when viewing the parameterized cron jobs
                     // through Jenkins. Not pretty to look at but I am ok with this.
                     parameterizedSpecification('''
-                        H(0-5) 8 * * * % SCRIPT_NAME=update_remote_forks.py; SCRIPT_ARGS=--stdin --verbose; PIPELINE_MODE=run; PROGLANG=python;
-                        H(15-20) 8 * * * % SCRIPT_NAME=disable_github_actions.py; SCRIPT_ARGS=--stdin; PIPELINE_MODE=run; PROGLANG=python;
+                        H(0-5) 8 * * * % SCRIPT_NAME=update_remote_forks.py; SCRIPT_ARGS=--stdin --verbose; PROGLANG=python;
+                        H(15-20) 8 * * * % SCRIPT_NAME=disable_github_actions.py; SCRIPT_ARGS=--stdin; PROGLANG=python;
                     ''')
                 }
             }

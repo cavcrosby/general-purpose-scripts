@@ -24,17 +24,6 @@ pipeline {
               - name: GPS_CONFIG_FILE_PATH
                 value: /usr/local/etc/gps.json
             tty: true
-          - name: gps-shell
-            image: cavcrosby/gps-shell:latest
-            command:
-              - cat
-            volumeMounts:
-              - name: gps-configs-secret
-                mountPath: /usr/local/etc
-            env:
-              - name: GPS_CONFIG_FILE_PATH
-                value: /usr/local/etc/gps.json
-            tty: true
           volumes:
             - name: github-ssh-secret
               secret:
@@ -53,7 +42,7 @@ pipeline {
   }
 
   stages {
-    stage('Build (python)') {
+    stage('Run (python)') {
       when {
         expression {
           "${params.PROGLANG}".toLowerCase() == "python"
@@ -62,67 +51,8 @@ pipeline {
       steps {
         container(name: 'gps-python') {
           checkout scm
-          sh 'make prefix="${PWD}" VIRTUALENV_PYTHON_VERSION="system" PROGLANG="python" setup'
-          sh 'make prefix="${PWD}" PROGLANG="python" install'
-        }
-      }
-    }
-
-    stage('Build (shell)') {
-      when {
-        expression {
-          "${params.PROGLANG}".toLowerCase() == "shell"
-        }
-      }
-      steps {
-        container(name: 'gps-shell') {
-          checkout scm
-          sh 'make prefix="${PWD}" PYENV_SETUP="false" PROGLANG="shell" setup'
-          sh 'make prefix="${PWD}" PROGLANG="shell" install'
-        }
-      }
-    }
-
-    stage('Run (python)') {
-      when {
-        allOf {
-          expression {
-            currentBuild.result == null || currentBuild.result == 'SUCCESS'
-          }
-          expression {
-            "${params.PIPELINE_MODE}".toLowerCase() == "run"
-          }
-          expression {
-            "${params.PROGLANG}".toLowerCase() == "python"
-          }
-        }
-      }
-      steps {
-        container(name: 'gps-python') {
-          sh './bin/${SCRIPT_NAME} ${SCRIPT_ARGS} <<< "$(./bin/genconfigs --export ${SCRIPT_NAME})"'
-        }
-      }
-    }
-
-    stage('Run (shell)') {
-      when {
-        // Accessing the currentBuild.result variable allows the pipeline to determine if
-        // there were any failures in the previous stages.
-        allOf {
-          expression {
-            currentBuild.result == null || currentBuild.result == 'SUCCESS'
-          }
-          expression {
-            "${params.PIPELINE_MODE}".toLowerCase() == "run"
-          }
-          expression {
-            "${params.PROGLANG}".toLowerCase() == "shell"
-          }
-        }
-      }
-      steps {
-        container(name: 'gps-shell') {
-          sh './bin/${SCRIPT_NAME} ${SCRIPT_ARGS} <<< "$(./bin/genconfigs --export ${SCRIPT_NAME})"'
+          sh 'make setup'
+          sh './src/${SCRIPT_NAME} ${SCRIPT_ARGS} <<< "$(./bin/genconfigs --export ${SCRIPT_NAME})"'
         }
       }
     }
