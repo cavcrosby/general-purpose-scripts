@@ -43,7 +43,7 @@ pipelineJob ('general-purpose-scripts') {
     }
 
     parameters {
-        stringParam('SCRIPT_NAME', 'update_github_forks.py', 'The name of the script to run.')
+        stringParam('SCRIPT_NAME', 'update_gh_forks.py', 'The name of the script to run.')
         stringParam('SCRIPT_ARGS', '-h', 'The arguments to append to the script, should be a space separated character string (e.g. "--foo bar baz").')
         stringParam('PROGLANG', 'python', 'The programming language the script was written in.')
     }

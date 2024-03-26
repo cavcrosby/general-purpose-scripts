@@ -10,3 +10,6 @@ email = "cavcrosby@gmail.com"
 
 [license]
 file = "./LICENSE"
+
+[tool.black]
+line-length = 79
