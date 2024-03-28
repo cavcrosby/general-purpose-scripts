@@ -5,25 +5,22 @@
 # recursively expanded variables
 SHELL = /usr/bin/sh
 
-# gnu install directory variables
-prefix = ${HOME}/.local
-exec_prefix = ${prefix}
-includedir = ${prefix}/include
-bin_dir = ${exec_prefix}/bin
-
 # targets
 HELP = help
 SETUP = setup
 CLEAN = clean
 
 # executables
-GENCONFIGS = genconfigs
 PYTHON = python
 PIP = pip
+YAMLLINT = yamllint
+GO = go
+ACTIONLINT = actionlint
 
 # simply expanded variables
 executables := \
-	${PYTHON}
+	${PYTHON}\
+	${GO}
 
 # inspired from:
 # https://stackoverflow.com/questions/5618615/check-if-a-program-exists-from-a-makefile#answer-25668869
@@ -36,22 +33,21 @@ ${HELP}:
 >	@echo '  ${SETUP}              - this runs additional commands in preparation to deploy'
 >	@echo '                       scripts on the current machine'
 >	@echo '  ${CLEAN}              - removes files generated from other targets'
->	@echo 'Common make configurations (e.g. make [config]=1 [targets]):'
->	@echo '  bin_dir            - determines the where links are installed/uninstalled'
->	@echo '                       from (default: $${HOME}/.local/bin)'
 
 .PHONY: ${SETUP}
 ${SETUP}:
->	mkdir --parents "${bin_dir}"
-
-	# installs the genconfigs program and initializes it
->	ln --symbolic --force "${CURDIR}/${GENCONFIGS}" "${bin_dir}/${GENCONFIGS}"
->	${CURDIR}/${GENCONFIGS}
->	chmod 600 "$$(${CURDIR}/${GENCONFIGS} --show-path)"
 >	${PYTHON} -m ${PIP} install --upgrade "${PIP}"
 >	${PYTHON} -m ${PIP} install \
 		--requirement "./requirements.txt" \
 		--requirement "./requirements-dev.txt"
+
+>	cd "./internal/tools" \
+		&& GOBIN="${CURDIR}/bin" ${GO} install "github.com/rhysd/actionlint/cmd/actionlint"
+
+.PHONY: ${LINT}
+${LINT}:
+>	${YAMLLINT} --strict "."
+>	./bin/${ACTIONLINT}
 
 .PHONY: ${CLEAN}
 ${CLEAN}:
