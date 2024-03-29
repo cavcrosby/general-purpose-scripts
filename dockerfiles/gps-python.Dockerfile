@@ -16,5 +16,12 @@ RUN groupadd --gid "${RUNNER_GROUP_ID}" "${RUNNER_GROUP_NAME}" \
         --shell /bin/bash \
         "${RUNNER_USER_NAME}"
 
+RUN --mount=type=bind,source=requirements.txt,target=/tmp/requirements.txt \
+    python -m pip install --requirement "/tmp/requirements.txt"
+
+COPY --chown=${RUNNER_USER_ID}:${RUNNER_GROUP_ID} \
+    "./src" \
+    "${RUNNER_USER_HOME}/src"
+
 USER "${RUNNER_USER_NAME}"
-WORKDIR "${RUNNER_USER_HOME}"
+WORKDIR "${RUNNER_USER_HOME}/src"
