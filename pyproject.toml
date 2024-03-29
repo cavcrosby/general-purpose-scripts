@@ -1,7 +1,7 @@
 [project]
-name = "gps-cavcrosby"
+name = "general-purpose-scripts"
 version = "1.0.0"
-description = "Scripts that I use on a daily basis or find useful"
+description = "Scripts that I use on a daily basis or find useful."
 requires-python = ">=3.9,<3.10"
 
 [[authors]]
