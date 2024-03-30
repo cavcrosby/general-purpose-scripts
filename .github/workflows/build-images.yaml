@@ -26,6 +26,6 @@ jobs:
         uses: docker/build-push-action@v5
         with:
           context: .
-          file: ./dockerfiles/gps-python.Dockerfile
+          file: ./dockerfiles/Dockerfile.gps-python
           push: true
           tags: cavcrosby/gps-python:latest
