@@ -16,6 +16,8 @@ PIP = pip
 YAMLLINT = yamllint
 GO = go
 ACTIONLINT = actionlint
+BLACK = black
+FLAKE8 = flake8
 
 # simply expanded variables
 executables := \
@@ -48,6 +50,8 @@ ${SETUP}:
 ${LINT}:
 >	${YAMLLINT} --strict "."
 >	./bin/${ACTIONLINT}
+>	${BLACK} "./src"
+>	${FLAKE8} "./src"
 
 .PHONY: ${CLEAN}
 ${CLEAN}:
