@@ -18,6 +18,7 @@ GO = go
 ACTIONLINT = actionlint
 BLACK = black
 FLAKE8 = flake8
+PRE_COMMIT = pre-commit
 
 # simply expanded variables
 executables := \
@@ -45,6 +46,8 @@ ${SETUP}:
 
 >	cd "./internal/tools" \
 		&& GOBIN="${CURDIR}/bin" ${GO} install "github.com/rhysd/actionlint/cmd/actionlint"
+
+>	${PRE_COMMIT} install
 
 .PHONY: ${LINT}
 ${LINT}:
