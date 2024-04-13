@@ -7,6 +7,7 @@ from configs import (
     REQUESTS_GITHUB_AUTH,
 )
 from github import Github, Auth
+from github.GithubException import GithubException
 import logging
 import requests
 import sys
@@ -45,8 +46,14 @@ def main():
     updated_successfully = True
     for forked_repo_name in FORKED_REPO_NAMES:
         repo = gh.get_repo(f"{GITHUB_USERNAME}/{forked_repo_name}")
-        branch_names = [branch.name for branch in repo.get_branches()]
-        for branch_name in branch_names:
+        for branch_name in frozenset(
+            [
+                branch.name
+                for branch in repo.parent.get_branches()
+                if branch.name != "gh-pages"
+            ]
+            + [branch.name for branch in repo.get_branches()]
+        ):
             upstream_branch = None
             try:
                 upstream_branch = repo.parent.get_branch(branch_name)
@@ -61,25 +68,33 @@ def main():
                     repo.get_git_ref(f"heads/{branch_name}").delete()
                     continue
 
-            headers = {
-                "Accept": "application/vnd.github+json",
-                "X-GitHub-Api-Version": "2022-11-28",
-                "User-Agent": GITHUB_USERNAME,
-            }
-            res = requests.post(
-                f"https://api.github.com/repos/{GITHUB_USERNAME}/{forked_repo_name}/merge-upstream",  # noqa: E501 line too long
-                auth=REQUESTS_GITHUB_AUTH,
-                headers=headers,
-                json={"branch": branch_name},
-            )
             try:
-                res.raise_for_status()
-            except requests.exceptions.HTTPError as err:
-                # merge conflict
-                if res.status_code == 409:
-                    repo.get_git_ref(f"heads/{branch_name}").delete()
-                logger.error(f"{err} branch: {branch_name}")
-                updated_successfully = False
+                repo.get_branch(branch_name)
+            except GithubException:
+                repo.create_git_ref(
+                    f"refs/heads/{branch_name}",
+                    repo.parent.get_git_ref(f"heads/{branch_name}").object.sha,
+                )
+            else:
+                headers = {
+                    "Accept": "application/vnd.github+json",
+                    "X-GitHub-Api-Version": "2022-11-28",
+                    "User-Agent": GITHUB_USERNAME,
+                }
+                res = requests.post(
+                    f"https://api.github.com/repos/{GITHUB_USERNAME}/{forked_repo_name}/merge-upstream",  # noqa: E501 line too long
+                    auth=REQUESTS_GITHUB_AUTH,
+                    headers=headers,
+                    json={"branch": branch_name},
+                )
+                try:
+                    res.raise_for_status()
+                except requests.exceptions.HTTPError as err:
+                    # merge conflict
+                    if res.status_code == 409:
+                        repo.get_git_ref(f"heads/{branch_name}").delete()
+                    logger.error(f"{err} branch: {branch_name}")
+                    updated_successfully = False
 
         workflows = [workflow for workflow in repo.get_workflows()]
         for workflow in workflows:
