@@ -12,24 +12,28 @@ import requests
 import sys
 
 FORKED_REPO_NAMES = [
-    "i386-elf-toolchain",
     "mrepo",
     "The-Stolen-Crown-RPG",
-    "VSCodeThemes",
     "community.general",
     "vagrant",
     "shunit2",
     "google-styleguide",
     "packer",
     "ansible",
-    "coreutils",
     "flake8-docstrings",
-    "cli",
-    "dnsmasq",
     "moby",
     "lxd",
     "docker-cli",
     "kubernetes-website",
+    "jaxlug.github.io",
+    "ansible-documentation",
+    "vagrant-libvirt",
+    "papirus-icon-theme",
+    "pyenv",
+    "tigera-operator",
+    "calico",
+    "awesome-python",
+    "xv6-public",
 ]
 
 logger = logging.getLogger(__name__)
