@@ -9,6 +9,7 @@ from configs import (
 from github import Github, Auth
 from github.GithubException import GithubException
 import logging
+import os
 import requests
 import sys
 
@@ -42,10 +43,19 @@ logger = logging.getLogger(__name__)
 
 def main():
     """Start the main program execution."""
+    logging.basicConfig(
+        level=(
+            os.getenv("LOGLEVEL")
+            if os.getenv("LOGLEVEL")
+            # use default root logger level
+            else logging.getLogger().getEffectiveLevel()
+        )
+    )
     gh = Github(auth=Auth.Token(GITHUB_ACCESS_TOKEN))
     updated_successfully = True
     for forked_repo_name in FORKED_REPO_NAMES:
         repo = gh.get_repo(f"{GITHUB_USERNAME}/{forked_repo_name}")
+        logger.info(f"Processing the forked repository: {repo.full_name}")
         for branch_name in frozenset(
             [
                 branch.name
@@ -65,17 +75,20 @@ def main():
                     or upstream_branch.name != branch_name
                     or branch_name == "gh-pages"
                 ):
+                    logger.info(f"Deleting the branch: {branch_name}")
                     repo.get_git_ref(f"heads/{branch_name}").delete()
                     continue
 
             try:
                 repo.get_branch(branch_name)
             except GithubException:
+                logger.info(f"Creating the branch: {branch_name}")
                 repo.create_git_ref(
                     f"refs/heads/{branch_name}",
                     repo.parent.get_git_ref(f"heads/{branch_name}").object.sha,
                 )
             else:
+                logger.info(f"Syncing the branch: {branch_name}")
                 headers = {
                     "Accept": "application/vnd.github+json",
                     "X-GitHub-Api-Version": "2022-11-28",
@@ -102,6 +115,7 @@ def main():
                 workflow.state != "disabled_manually"
                 and workflow.name != "pages-build-deployment"
             ):
+                logger.info(f"Disabling the workflow: {workflow.name}")
                 res = requests.put(
                     f"https://api.github.com/repos/{GITHUB_USERNAME}/{forked_repo_name}/actions/workflows/{workflow.id}/disable",  # noqa: E501 line too long
                     auth=REQUESTS_GITHUB_AUTH,
