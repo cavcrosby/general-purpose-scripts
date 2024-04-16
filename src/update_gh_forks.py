@@ -86,9 +86,17 @@ def manage_branches(gh_repo):
         try:
             upstream_branch = gh_repo.parent.get_branch(branch_name)
         finally:
+            # keep branches that have a (open) PR to be merged upstream
+            if tuple(
+                pull
+                for pull in gh_repo.parent.get_pulls(
+                    head=f"{GITHUB_USERNAME}:{branch_name}"
+                )
+            ):
+                continue
             # Don't track a branch non-existent on the upstream, that is
             # redirected upstream, or is the special GitHub Pages branch.
-            if (
+            elif (
                 upstream_branch is None
                 or upstream_branch.name != branch_name
                 or branch_name == "gh-pages"
