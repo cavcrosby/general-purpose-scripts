@@ -22,7 +22,6 @@ FORKED_REPO_NAMES = [
     "shunit2",
     "google-styleguide",
     "packer",
-    "ansible",
     "flake8-docstrings",
     "moby",
     "lxd",
